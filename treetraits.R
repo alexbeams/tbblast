@@ -13,7 +13,7 @@ require(dplyr)
 require(tibble)
 
 
-tree <- read.tree("constant_site_correction_kimura/treetime_results/timetree.nexus")
+tree <- read.tree("timetree.nexus")
 
 Metadata <- read.csv('~/Documents/TB/BLAST_ePAL_SeqID_NoGPS.csv')
 
