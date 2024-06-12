@@ -7,7 +7,11 @@ require(ggtree)
 # read in the .nexus timetree generated from the iq-tree kimura model
 # as well as the data file from Ben S. with lineage info
 
-tree <- read.nexus('timetree.nexus')
+#read in the timed tree:
+#tree <- read.nexus('constant_site_correction_kimura/treetime_results/timetree.nexus')
+
+# read in the un-timed tree:
+tree <- read.tree('constant_site_correction_kimura/Malawi_final_filtered.treefile')
 
 # ensure the tree is a bifurcating, rooted tree
 if (!is.binary(tree)){# if not bifuricating tree
@@ -15,16 +19,85 @@ if (!is.binary(tree)){# if not bifuricating tree
   tree$edge.length[which(tree$edge.length==0)]<-0.000000000001 # make all branch length non-zero
 }
 
-
-dat <- read.csv('Malawi_final_stats.csv')
+drugdat <- read.csv('Malawi_final_stats.csv')
 blastdat <- read.csv('BLAST_ePAL_SeqID_NoGPS.csv')
+
+#merge the tree and drugdat
+drugdat.merge <- merge(data.frame(Sequence.name=tree$tip.label), drugdat,
+	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
+
+
+#merge the tree and blastdat
+blastdat.merge <- merge(data.frame(Sequence_name=tree$tip.label), blastdat,
+	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
+
+# Create a ggtree object for drugdat
+p.drugdat <- ggtree(tree,layout='circular')
+
+# Join the drugdat data to the ggtree object
+p.drugdat <- p.drugdat %<+% drugdat.merge
+ 
+# Color the tree based on a metadata column, for example, 'Major.Lineage'
+
+#looks like iqtree2 recovered the lineages:
+p.drugdat + geom_tippoint(aes(color=Major.Lineage)) +
+    theme_tree2()
+
+#look at some drug resistance data:
+p.drugdat + geom_tippoint(aes(color=Drug.resistance.Tbprofiler)) +
+    theme_tree2()
+
+
+# Create a ggtree object for blastdat
+p.blastdat <- ggtree(tree,layout='circular')
+
+# Join the blastdat data to the ggtree object
+p.blastdat <- p.blastdat %<+% blastdat.merge
+ 
+# Color the tree based on a metadata column, for example, 'Major.Lineage'
+p.blastdat + geom_tippoint(aes(color=wardID)) +
+    theme_tree2()
+
+p.blastdat + geom_tippoint(aes(color=x20hiv)) +
+    theme_tree2()
+
+p.blastdat + geom_tippoint(aes(color=x17tbtype)) +
+    theme_tree2()
+
+p.blastdat + geom_tippoint(aes(color=sympcough)) +
+    theme_tree2()
+
+p.blastdat + geom_tippoint(aes(color=sympweight)) +
+    theme_tree2()
+
+p.blastdat + geom_tippoint(aes(color=coughduration)) +
+    theme_tree2()
+
+p.blastdat + geom_tippoint(aes(color=radio)) +
+    theme_tree2()
+
+p.blastdat + geom_tippoint(aes(color=phone)) +
+    theme_tree2()
+
+
+
+
+
+
+
+
+
+## this stuff below was all using the ace function, which is throwing some
+# incomprehensible error on my desktop. Just drawing metadata directly onto
+# the untimed tree now 
 
 lineage <- dat$Major.Lineage
 names(lineage) <- dat$Sequence.name
 
 lineage = lineage[which(names(lineage) %in% tree$tip.label)]
 
-anc_lineage = suppressWarnings(ace(lineage,tree,type='d',method='ML'))
+#this is now throwing an error on the desktop. Not sure why.
+#anc_lineage = suppressWarnings(ace(lineage,tree,type='d',method='ML'))
 
 node_anc <- colnames(anc_lineage$lik.anc)[apply(anc_lineage$lik.anc, 1, which.max)]
 
