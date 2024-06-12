@@ -5,7 +5,7 @@ rm(list=ls())
 
 require("ape")
 require("phytools")
-requrie("ggalluvial")
+require("ggalluvial")
 require(ggplot2)
 require(ggtree)
 require(tidyr)
@@ -13,7 +13,7 @@ require(dplyr)
 require(tibble)
 
 
-tree <- read.tree("timetree.nexus")
+tree <- read.tree("constant_site_correction_kimura/treetime_results/timetree.nexus")
 
 Metadata <- read.csv('~/Documents/TB/BLAST_ePAL_SeqID_NoGPS.csv')
 
