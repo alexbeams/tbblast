@@ -13,6 +13,12 @@ require(ggtree)
 # read in the un-timed tree:
 tree <- read.tree('constant_site_correction_kimura/Malawi_final_filtered.treefile')
 
+tree1 <- read.tree('lineage1_tree.newick')
+tree2 <- read.tree('lineage2_tree.newick')
+tree3 <- read.tree('lineage3_tree.newick')
+tree4 <- read.tree('lineage4_tree.newick')
+treeMbovis <- read.tree('lineageMbovis_tree.newick')
+
 # ensure the tree is a bifurcating, rooted tree
 if (!is.binary(tree)){# if not bifuricating tree
   tree=multi2di(tree) # Change to bifuricating
@@ -26,6 +32,21 @@ blastdat <- read.csv('BLAST_ePAL_SeqID_NoGPS.csv')
 drugdat.merge <- merge(data.frame(Sequence.name=tree$tip.label), drugdat,
 	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
 
+drugdat1.merge <- merge(data.frame(Sequence.name=tree1$tip.label), drugdat,
+	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
+
+drugdat2.merge <- merge(data.frame(Sequence.name=tree2$tip.label), drugdat,
+	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
+
+drugdat3.merge <- merge(data.frame(Sequence.name=tree3$tip.label), drugdat,
+	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
+
+drugdat4.merge <- merge(data.frame(Sequence.name=tree4$tip.label), drugdat,
+	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
+
+drugdatMbovis.merge <- merge(data.frame(Sequence.name=treeMbovis$tip.label), drugdat,
+	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
+
 
 #merge the tree and blastdat
 blastdat.merge <- merge(data.frame(Sequence_name=tree$tip.label), blastdat,
@@ -34,14 +55,46 @@ blastdat.merge <- merge(data.frame(Sequence_name=tree$tip.label), blastdat,
 # Create a ggtree object for drugdat
 p.drugdat <- ggtree(tree,layout='circular')
 
+# lineage-specific ggtree objects:
+p1.drugdat <- ggtree(tree1,layout='circular')
+p2.drugdat <- ggtree(tree2,layout='circular')
+p3.drugdat <- ggtree(tree3,layout='circular')
+p4.drugdat <- ggtree(tree4,layout='rectangular')
+pMbovis.drugdat <- ggtree(treeMbovis,layout='circular')
+
+
+
 # Join the drugdat data to the ggtree object
 p.drugdat <- p.drugdat %<+% drugdat.merge
- 
+
+p1.drugdat <- p1.drugdat %<+% drugdat1.merge
+p2.drugdat <- p2.drugdat %<+% drugdat2.merge
+p3.drugdat <- p3.drugdat %<+% drugdat3.merge
+p4.drugdat <- p4.drugdat %<+% drugdat4.merge
+pMbovis.drugdat <- pMbovis.drugdat %<+% drugdatMbovis.merge
+
 # Color the tree based on a metadata column, for example, 'Major.Lineage'
 
 #looks like iqtree2 recovered the lineages:
 p.drugdat + geom_tippoint(aes(color=Major.Lineage)) +
     theme_tree2()
+
+p1.drugdat + geom_tippoint(aes(color=Major.Lineage)) +
+    theme_tree2()
+
+p2.drugdat + geom_tippoint(aes(color=Major.Lineage)) +
+    theme_tree2()
+
+p3.drugdat + geom_tippoint(aes(color=Major.Lineage)) +
+    theme_tree2()
+
+p4.drugdat + geom_tippoint(aes(color=Major.Lineage)) +
+    theme_tree2()
+
+pMbovis.drugdat + geom_tippoint(aes(color=Major.Lineage)) +
+    theme_tree2()
+
+
 
 #look at some drug resistance data:
 p.drugdat + geom_tippoint(aes(color=Drug.resistance.Tbprofiler)) +
