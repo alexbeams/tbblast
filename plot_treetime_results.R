@@ -19,6 +19,13 @@ tree3 <- read.tree('lineage3_tree.newick')
 tree4 <- read.tree('lineage4_tree.newick')
 treeMbovis <- read.tree('lineageMbovis_tree.newick')
 
+timetree1 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage1_results/timetree.nexus')
+timetree2 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage2_results/timetree.nexus')
+timetree3 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage3_results/timetree.nexus')
+timetree4 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage4_results/timetree.nexus')
+timetreeMbovis <- ape::read.nexus('constant_site_correction_kimura/treetime_lineageMbovis_results/timetree.nexus')
+
+
 # ensure the tree is a bifurcating, rooted tree
 if (!is.binary(tree)){# if not bifuricating tree
   tree=multi2di(tree) # Change to bifuricating
@@ -32,19 +39,19 @@ blastdat <- read.csv('BLAST_ePAL_SeqID_NoGPS.csv')
 drugdat.merge <- merge(data.frame(Sequence.name=tree$tip.label), drugdat,
 	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
 
-drugdat1.merge <- merge(data.frame(Sequence.name=tree1$tip.label), drugdat,
+drugdat1.merge <- merge(data.frame(Sequence.name=timetree1$tip.label), drugdat,
 	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
 
-drugdat2.merge <- merge(data.frame(Sequence.name=tree2$tip.label), drugdat,
+drugdat2.merge <- merge(data.frame(Sequence.name=timetree2$tip.label), drugdat,
 	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
 
-drugdat3.merge <- merge(data.frame(Sequence.name=tree3$tip.label), drugdat,
+drugdat3.merge <- merge(data.frame(Sequence.name=timetree3$tip.label), drugdat,
 	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
 
-drugdat4.merge <- merge(data.frame(Sequence.name=tree4$tip.label), drugdat,
+drugdat4.merge <- merge(data.frame(Sequence.name=timetree4$tip.label), drugdat,
 	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
 
-drugdatMbovis.merge <- merge(data.frame(Sequence.name=treeMbovis$tip.label), drugdat,
+drugdatMbovis.merge <- merge(data.frame(Sequence.name=timetreeMbovis$tip.label), drugdat,
 	by.x="Sequence.name",by.y="Sequence.name",all.x=TRUE )
 
 
@@ -56,11 +63,11 @@ blastdat.merge <- merge(data.frame(Sequence_name=tree$tip.label), blastdat,
 p.drugdat <- ggtree(tree,layout='circular')
 
 # lineage-specific ggtree objects:
-p1.drugdat <- ggtree(tree1,layout='circular')
-p2.drugdat <- ggtree(tree2,layout='circular')
-p3.drugdat <- ggtree(tree3,layout='circular')
-p4.drugdat <- ggtree(tree4,layout='rectangular')
-pMbovis.drugdat <- ggtree(treeMbovis,layout='circular')
+p1.drugdat <- ggtree(timetree1,layout='circular')
+p2.drugdat <- ggtree(timetree2,layout='circular')
+p3.drugdat <- ggtree(timetree3,layout='circular')
+p4.drugdat <- ggtree(timetree4,layout='circular')
+pMbovis.drugdat <- ggtree(timetreeMbovis,layout='circular')
 
 
 
