@@ -50,3 +50,6 @@ fviz_pca_biplot(pca_result, repel = TRUE)
 principal_components <- pca_result$x
 head(principal_components)
 
+
+
+

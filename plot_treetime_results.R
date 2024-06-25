@@ -304,25 +304,25 @@ pMbovis.dat <- pMbovis.dat %<+% datMbovis.merge
 
 # Color the tree based on a metadata column, for example, 'lbi'
 
-p1.dat + geom_tippoint(aes(color=lbi)) + 
+p1lbi <- p1.dat + geom_tippoint(aes(color=lbi)) + 
 	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()
+    theme_tree2() + ggtitle('lineage 1')
 
-p2.dat + geom_tippoint(aes(color=lbi)) + 
+p2lbi <- p2.dat + geom_tippoint(aes(color=lbi)) + 
 	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()
+    theme_tree2()+ ggtitle('lineage 2')
 
-p3.dat + geom_tippoint(aes(color=lbi)) + 
+p3lbi <- p3.dat + geom_tippoint(aes(color=lbi)) + 
 	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()
+    theme_tree2()+ ggtitle('lineage 3')
 
-p4.dat + geom_tippoint(aes(color=lbi)) + 
+p4lbi <- p4.dat + geom_tippoint(aes(color=lbi)) + 
 	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()
+    theme_tree2()+ ggtitle('lineage 4')
 
-pMbovis.dat + geom_tippoint(aes(color=lbi)) + 
+pMbovislbi <- pMbovis.dat + geom_tippoint(aes(color=lbi)) + 
 	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()
+    theme_tree2()+ ggtitle('lineage M.bovis')
 
 
 
@@ -347,6 +347,9 @@ plot(lbi~as.factor(x14cgh),dat)
 
 #x16patcat? 
 plot(lbi~as.factor(x16patcat),dat)
+# New has 640 sequences, Relapse has 58, Other has 6,
+#  Return .. has 2, Treatment failure has 1
+# Relapse might be significantly higher than New 
 
 #x18dot?
 plot(lbi~as.factor(x18dot),dat)
@@ -367,6 +370,9 @@ plot(lbi~as.factor(coughduration),dat)
 plot(lbi~as.factor(tbclass),dat)
 
 plot(lbi~as.factor(tbcategory),dat)
+# return after default has 3 sequences
+#  New: 636, Relapse: 62
+
 
 plot(lbi~as.factor(hittbclass),dat)
 
@@ -411,6 +417,8 @@ plot(lbi~as.factor(primarycareservices),dat)
 plot(lbi~as.factor(nontbward),dat)
 
 plot(lbi~as.factor(sleepwithtb),dat)
+# few datapoints in each: 23 in Yes, 21 in No
+
 
 plot(lbi~as.factor(levelschool),dat)
 
