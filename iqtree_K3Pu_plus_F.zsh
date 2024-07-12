@@ -1,1 +1,1 @@
-iqtree2 -s /Users/abeams/Documents/TB/Malawi_final_filtered.fasta -m K3Pu+F -fconst 764817,1420377,1420377,764817 --prefix /Users/abeams/Documents/TB/constant_site_correction_kimura/Malawi_final_filtered
+iqtree2 -s /Users/abeams/Documents/TB/Malawi_final_filtered.fasta -m K3Pu+F -fconst 764817,1420377,1420377,764817 --prefix /Users/abeams/Documents/TB/constant_site_correction_kimura_bootstrapped/Malawi_final_filtered -B 1000
