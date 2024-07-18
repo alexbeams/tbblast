@@ -1,5 +1,32 @@
 rm(list=ls())
 
+# to do:
+# generate LBI for timed and un-timed trees separately
+# for timed trees, probably calculate LBI on different clades separately
+# look into other phylogenetic signal metrics
+# can we use BiSSE for traits like location or HIV status?
+# look into timed haplotype density calculation
+# BiSSE models might be ok for the 707 sequences; might be approaching the limit of feasibility for them
+
+# THD is meant to measure how "branchy" a sequence's ancestors were
+#	it basically calculates a kernel density estimate for sequences, 
+#	and if testing is random, successful clades transmit many new
+#	descendants in a short time, and this appears as a higher density
+#	in that region of sequence space
+#	it requires a Hamming distance matrix; probably would be better to use on
+#	genes, rather than nucleotides...
+
+# LBI is accomplishing something similar. The Neher et al paper showed that it 
+#	correlates reasonably well with a Brownian-Motion model for fitness
+#	along lineages
+
+
+# Is there a most general way to identify which parts of the tree are "hottest"?
+
+# Cedric's idea: try using Multi-Locus Sequence Typing on the raw reads to see whether
+#	the maximum likelihood tree based on SNPs is consistent with strain type
+
+
 require(ape)
 require(ggplot2)
 require(ggtree)
@@ -141,17 +168,24 @@ p.blastdat + geom_tippoint(aes(color=phone)) +
 
 # itol: interactive tree of life
 # figtree - try to map on the metadata
+
+# how are metadata features distributed in the tree? can we find a phylogenetic signal?
 # bisse models
 # phylogenetic signal, ideally without time and without inferred node states
-# try circular phylogeny
+
+
+# are some clades more successful than others? How can we quantify this?
 # local branching index! probably needs a time tree - within the individual clades? could try it with
 #  untimed tree
-# think about using PCA for dimensionality reduction, or formulate a lasso regression to predict local branching index
+
+# other node/tip statistics we could use? 
+# once we have some features which we think describe clade success, we can
+# think about using PCA for dimensionality reduction, or formulate a lasso regression to predict
+# the local branching index, for example
 
 # 1. PCA dimensionality in the metadata
-# 2. What is ancestral state reconstruction, anyway?
-# 3. local branching index in the timed trees, seeing if PCA-ish outputs are useful predictors of LBI in a regression
-# 4. Do any of the metadata variables appear significant in a regression predicting local branching index?
+# 2. local branching index in the timed trees, seeing if PCA-ish outputs are useful predictors of LBI in a regression
+# 3. Do any of the metadata variables appear significant in a regression predicting local branching index?
 
 
 #########################
@@ -234,7 +268,7 @@ lbi<-function(tree, tau=0.0005,transform=function(x){x}){
   return(lbi)
 }
 
-#generate local branching indices for the tips
+#generate local branching indices for the untimed trees:
 x1 <- lbi(tree1,tau=.00001)
 x1 <- x1[1:Ntip(tree1)]
 x1nms <- tree1$tip.label
@@ -272,27 +306,27 @@ dat = merge(blastdat,lbidat)
 dat$lbi <- as.numeric(dat$lbi)
 
 #merge the trees and dat
-dat1.merge <- merge(data.frame(Sequence_name=timetree1$tip.label), dat,
+dat1.merge <- merge(data.frame(Sequence_name=tree1$tip.label), dat,
 	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
 
-dat2.merge <- merge(data.frame(Sequence_name=timetree2$tip.label), dat,
+dat2.merge <- merge(data.frame(Sequence_name=tree2$tip.label), dat,
 	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
 
-dat3.merge <- merge(data.frame(Sequence_name=timetree3$tip.label), dat,
+dat3.merge <- merge(data.frame(Sequence_name=tree3$tip.label), dat,
 	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
 
-dat4.merge <- merge(data.frame(Sequence_name=timetree4$tip.label), dat,
+dat4.merge <- merge(data.frame(Sequence_name=tree4$tip.label), dat,
 	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
 
-datMbovis.merge <- merge(data.frame(Sequence_name=timetreeMbovis$tip.label), dat,
+datMbovis.merge <- merge(data.frame(Sequence_name=treeMbovis$tip.label), dat,
 	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
 
 # lineage-specific ggtree objects:
-p1.dat <- ggtree(timetree1,layout='circular')
-p2.dat <- ggtree(timetree2,layout='circular')
-p3.dat <- ggtree(timetree3,layout='circular')
-p4.dat <- ggtree(timetree4,layout='circular')
-pMbovis.dat <- ggtree(timetreeMbovis,layout='circular')
+p1.dat <- ggtree(tree1,layout='circular')
+p2.dat <- ggtree(tree2,layout='circular')
+p3.dat <- ggtree(tree3,layout='circular')
+p4.dat <- ggtree(tree4,layout='circular')
+pMbovis.dat <- ggtree(treeMbovis,layout='circular')
 
 
 
@@ -324,6 +358,106 @@ pMbovislbi <- pMbovis.dat + geom_tippoint(aes(color=lbi)) +
 	scale_color_gradient(high='red',low='blue') +
     theme_tree2()+ ggtitle('lineage M.bovis')
 
+
+#generate local branching indices for the timed trees:
+xt1 <- lbi(timetree1,tau=.00001)
+xt1 <- xt1[1:Ntip(timetree1)]
+xt1nms <- timetree1$tip.label
+plot(xt1)
+
+
+xt2 <- lbi(timetree2)
+xt2 <- xt2[1:Ntip(timetree2)]
+xt2nms <- timetree2$tip.label
+plot(xt2)
+
+xt3 <- lbi(timetree3)
+xt3 <- xt3[1:Ntip(timetree3)]
+xt3nms <- timetree3$tip.label
+plot(xt3)
+
+
+xt4 <- lbi(timetree4,tau=.00001)
+xt4 <- xt4[1:Ntip(timetree4)]
+xt4nms <- timetree4$tip.label
+plot(xt4)
+
+xtMbovis <- lbi(timetreeMbovis)
+xtMbovis <- xtMbovis[1:Ntip(timetreeMbovis)]
+xtMbovisnms <- timetreeMbovis$tip.label
+plot(xtMbovis)
+
+lbits <- c(xt1,xt2,xt3,xt4,xtMbovis)
+lbitnms <- c(xt1nms,xt2nms,xt3nms,xt4nms,xtMbovisnms)
+lbitdat <- data.frame(cbind(lbinms,lbits))
+colnames(lbitdat) <- c('Sequence_name','lbit')
+
+
+dat = merge(dat,lbitdat)
+
+dat$lbit <- as.numeric(dat$lbit)
+
+#merge the trees and dat 
+timedat1.merge <- merge(data.frame(Sequence_name=timetree1$tip.label), dat,
+	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
+
+timedat2.merge <- merge(data.frame(Sequence_name=timetree2$tip.label), dat,
+	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
+
+timedat3.merge <- merge(data.frame(Sequence_name=timetree3$tip.label), dat,
+	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
+
+timedat4.merge <- merge(data.frame(Sequence_name=timetree4$tip.label), dat,
+	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
+
+timedatMbovis.merge <- merge(data.frame(Sequence_name=timetreeMbovis$tip.label), dat,
+	by.x="Sequence_name",by.y="Sequence_name",all.x=TRUE )
+
+# lineage-specific ggtree objects:
+p1.timedat <- ggtree(timetree1,layout='circular')
+p2.timedat <- ggtree(timetree2,layout='circular')
+p3.timedat <- ggtree(timetree3,layout='circular')
+p4.timedat <- ggtree(timetree4,layout='circular')
+pMbovis.timedat <- ggtree(timetreeMbovis,layout='circular')
+
+p1.timedat <- p1.timedat %<+% timedat1.merge
+p2.timedat <- p2.timedat %<+% timedat2.merge
+p3.timedat <- p3.timedat %<+% timedat3.merge
+p4.timedat <- p4.timedat %<+% timedat4.merge
+pMbovis.timedat <- pMbovis.timedat %<+% timedatMbovis.merge
+
+# Color the tree based on a metadata column, for example, 'lbit'
+
+p1lbit <- p1.timedat + geom_tippoint(aes(color=lbit)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2() + ggtitle('lineage 1')
+
+p2lbit <- p2.timedat + geom_tippoint(aes(color=lbit)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 2')
+
+p3lbit <- p3.timedat + geom_tippoint(aes(color=lbit)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 3')
+
+p4lbit <- p4.timedat + geom_tippoint(aes(color=lbit)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 4')
+
+pMbovislbit <- pMbovis.timedat + geom_tippoint(aes(color=lbit)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage M.bovis')
+
+
+
+# Calculate the Timed Haplotype Density for the trees
+#	start with tree4 and timetree4 for now
+
+
+#load in the functions to calculate the THD
+source('thd.R')
+
+#create a hamming distance matrix and plug into the KDE
 
 
 # are any metadata variables correlated with LBI?
