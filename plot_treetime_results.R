@@ -11,7 +11,7 @@ rm(list=ls())
 # THD is meant to measure how "branchy" a sequence's ancestors were
 #	it basically calculates a kernel density estimate for sequences, 
 #	and if testing is random, successful clades transmit many new
-#	descendants in a short time, and this appears as a higher density
+#	descendants in a short time, producing a higher density
 #	in that region of sequence space
 #	it requires a Hamming distance matrix; probably would be better to use on
 #	genes, rather than nucleotides...
@@ -21,15 +21,17 @@ rm(list=ls())
 #	along lineages
 
 
-# Is there a most general way to identify which parts of the tree are "hottest"?
+# Is there a more general way to identify which parts of the tree are "hottest"?
 
 # Cedric's idea: try using Multi-Locus Sequence Typing on the raw reads to see whether
 #	the maximum likelihood tree based on SNPs is consistent with strain type
 
 
-require(ape)
-require(ggplot2)
-require(ggtree)
+library(ape)
+library(ggplot2)
+library(ggtree)
+library(Biostrings)
+
 
 # read in the .nexus timetree generated from the iq-tree kimura model
 # as well as the data file from Ben S. with lineage info
@@ -458,7 +460,61 @@ pMbovislbit <- pMbovis.timedat + geom_tippoint(aes(color=lbit)) +
 source('thd.R')
 
 #create a hamming distance matrix and plug into the KDE
+fasta_file <- "Malawi_final_filtered.fasta"
+alignment <- readDNAStringSet(fasta_file)
 
+compute_hamming_distance <- function(seq1, seq2) {
+  seq1_chars <- as.character(unlist(strsplit(as.character(seq1), "")))
+  seq2_chars <- as.character(unlist(strsplit(as.character(seq2), "")))
+  sum(seq1_chars != seq2_chars)
+}
+
+# Get the number of sequences
+n <- length(alignment)
+
+# Initialize the distance matrix
+hamming_matrix <- matrix(0, n, n)
+
+# Uncomment to fill the matrix
+#for (i in 1:n) {
+#  for (j in i:n) {
+#    dist <- compute_hamming_distance(alignment[[i]], alignment[[j]])
+#    hamming_matrix[i, j] <- dist
+#    hamming_matrix[j, i] <- dist
+#  }
+#}
+
+load("hamming_matrix.Rdata")
+
+m <- length(alignment[[1]])
+mu <- 5e-4
+timescale <- 2 
+bandwidth <- tmrca2bandwidth(timescale, m , mu)
+THD <- thd(hamming_matrix, bandwidth, m)
+
+# Display hclust tree and THDs
+hc <- hclust(as.dist(hamming_matrix))
+
+par(mfrow = c(2,1))
+par(mar = c(1, 5, 1, 5))
+plot(hc, labels = FALSE, xlab = "", main = "", sub = "")
+barplot(THD[hc$order], ylim = rev(range(THD)), ylab = "THD")
+
+
+#plot with color
+colors <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD, breaks = 100))]
+ph <- as.phylo(hc)
+par(mfrow=c(1,1))
+plot(ph,type='fan',show.tip.label=F,main='THD for 707 Sequences')
+tiplabels(pch=19,col=colors,cex=1)
+
+#probably want to run THD for each lineage separately. Just looks like
+#	it's picking up lineage 4. Or, maybe just tuning the bandwidth
+#	will do the job
+
+THDdat <- cbind(names(alignment), THD)
+colnames(THDdat) <- c('Sequence_name','THD')
+rownames(THDdat) <- NULL
 
 # are any metadata variables correlated with LBI?
 
