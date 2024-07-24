@@ -32,6 +32,7 @@ library(ggplot2)
 library(ggtree)
 library(Biostrings)
 library(RColorBrewer)
+library(gridExtra)
 
 # read in the .nexus timetree generated from the iq-tree kimura model
 # as well as the data file from Ben S. with lineage info
@@ -368,36 +369,6 @@ colnames(thddat) <- c('Sequence_name','thd')
 dat = merge(blastdat,thddat)
 
 dat$thd <- as.numeric(dat$thd)
-
-      
-p1thd <- p1.timedat + geom_tippoint(aes(color=thd)) + 
-	scale_color_gradient(high='red',low='blue') +
-    theme_tree2() + ggtitle('lineage 1')
-
-p2thd <- p2.timedat + geom_tippoint(aes(color=thd)) + 
-	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()+ ggtitle('lineage 2')
-
-p3thd <- p3.timedat + geom_tippoint(aes(color=thd)) + 
-	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()+ ggtitle('lineage 3')
-
-p4thd <- p4.timedat + geom_tippoint(aes(color=thd)) + 
-	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()+ ggtitle('lineage 4')
-
-#pMbovisthd <- pMbovis.timedat + geom_tippoint(aes(color=thd)) + 
-#	scale_color_gradient(high='red',low='blue') +
-#    theme_tree2()+ ggtitle('lineage M.bovis')
-
-thd_plots <- grid.arrange(p1thd,p2thd,p3thd,p4thd, ncol = 2, nrow = 2)
-
-ggsave(filename = "figures/thd_timetrees.png", plot = thd_plots, 
-       width = 16, height = 16, dpi = 300)
-
-
-
-
 
 #########################
 # Local branching index #
