@@ -48,6 +48,15 @@ tree3 <- read.tree('lineage3_tree.newick')
 tree4 <- read.tree('lineage4_tree.newick')
 treeMbovis <- read.tree('lineageMbovis_tree.newick')
 
+#keep track of the sequences in each lineage
+lin1nms <- tree1$tip.label
+lin2nms <- tree2$tip.label
+lin3nms <- tree3$tip.label
+lin4nms <- tree4$tip.label
+linMbovnms <- treeMbovis$tip.label
+
+
+
 timetree1 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage1_results/timetree.nexus')
 timetree2 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage2_results/timetree.nexus')
 timetree3 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage3_results/timetree.nexus')
@@ -510,15 +519,132 @@ tiplabels(pch=19,col=colors,cex=1)
 
 #probably want to run THD for each lineage separately. Just looks like
 #	it's picking up lineage 4. Or, maybe just tuning the bandwidth
-#	will do the job
+#	will do the job...
 
-THDdat <- cbind(names(alignment), THD)
-colnames(THDdat) <- c('Sequence_name','THD')
-rownames(THDdat) <- NULL
+rownames(hamming_matrix) <- names(alignment)
+colnames(hamming_matrix) <- names(alignment)
+
+lin1inds <- sapply(lin1nms, function(x) which(names(alignment) == x  ))
+lin2inds <- sapply(lin2nms, function(x) which(names(alignment) == x  ))
+lin3inds <- sapply(lin3nms, function(x) which(names(alignment) == x  ))
+lin4inds <- sapply(lin4nms, function(x) which(names(alignment) == x  ))
+linMbovinds <- sapply(linMbovnms, function(x) which(names(alignment) == x  ))
+
+hamming_lin1 <- hamming_matrix[lin1inds,lin1inds]
+hamming_lin2 <- hamming_matrix[lin2inds,lin2inds]
+hamming_lin3 <- hamming_matrix[lin3inds,lin3inds]
+hamming_lin4 <- hamming_matrix[lin4inds,lin4inds]
+hamming_linMbov <- hamming_matrix[linMbovinds,linMbovinds]
+
+mu1 <- 5e-4
+timescale1 <- 2 
+bandwidth1 <- tmrca2bandwidth(timescale1, m , mu1)
+
+mu2 <- 5e-4
+timescale2 <- 2 
+bandwidth2 <- tmrca2bandwidth(timescale2, m , mu2)
+
+mu3 <- 5e-4
+timescale3 <- 2 
+bandwidth3 <- tmrca2bandwidth(timescale3, m , mu3)
+
+mu4 <- 5e-4
+timescale4 <-2 
+bandwidth4 <- tmrca2bandwidth(timescale4, m , mu4)
+
+THD1 <- thd(hamming_lin1, bandwidth1, m)
+THD2 <- thd(hamming_lin2, bandwidth2, m)
+THD3 <- thd(hamming_lin3, bandwidth3, m)
+THD4 <- thd(hamming_lin4, bandwidth4, m)
+THDMbov <- thd(hamming_linMbov, bandwidth, m)
+
+# plot the THDs:
+par(mfrow=c(2,2))
+
+plot(THD1)
+plot(THD2)
+plot(THD3)
+plot(THD4)
+
+
+
+
+# Display hclust trees and THDs
+hc1 <- hclust(as.dist(hamming_lin1))
+hc2 <- hclust(as.dist(hamming_lin2))
+hc3 <- hclust(as.dist(hamming_lin3))
+hc4 <- hclust(as.dist(hamming_lin4))
+hcMbov <- hclust(as.dist(hamming_linMbov))
+
+#plot with color
+colors1 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD1, breaks = 100))]
+colors2 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD2, breaks = 100))]
+colors3 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD3, breaks = 100))]
+colors4 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD4, breaks = 100))]
+colorsMbov <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THDMbov, breaks = 100))]
+
+ph1 <- as.phylo(hc1)
+ph2 <- as.phylo(hc2)
+ph3 <- as.phylo(hc3)
+ph4 <- as.phylo(hc4)
+phMbov <- as.phylo(hcMbov)
+
+par(mfrow=c(2,2))
+plot(ph1,type='fan',show.tip.label=F,main='THD for Lineage 1 Sequences')
+tiplabels(pch=19,col=colors1,cex=1)
+
+plot(ph2,type='fan',show.tip.label=F,main='THD for Lineage 2 Sequences')
+tiplabels(pch=19,col=colors2,cex=1)
+
+plot(ph3,type='fan',show.tip.label=F,main='THD for Lineage 3 Sequences')
+tiplabels(pch=19,col=colors3,cex=1)
+
+plot(ph4,type='fan',show.tip.label=F,main='THD for Lineage 4 Sequences')
+tiplabels(pch=19,col=colors4,cex=1)
+
+
+
+# examine the ClusterPicker tree:
+
+# Read the tree
+tree <- read.tree("/Users/abeams/Documents/TB/constant_site_correction_kimura_bootstrapped/clusterpickertree.newick")
+
+# Example: Extracting cluster names from tip labels
+# Assuming tip labels are in the format "tipname_clustername"
+tip_labels <- tree$tip.label
+clusters <- sapply(strsplit(tip_labels, "_"), function(x) x[1])
+
+# Create a data frame for ggtree
+df <- data.frame(label = tip_labels, cluster = clusters)
+
+# Generate a distinct color palette for 62 clusters
+num_clusters <- length(unique(clusters))
+colors <- brewer.pal(min(num_clusters, 12), "Set3") # Use "Set3" palette for up to 12 clusters
+
+# If more than 12 clusters, use colorRampPalette to extend the palette
+if (num_clusters > 12) {
+  colors <- colorRampPalette(colors)(num_clusters)
+}
+
+# Create the ggtree plot with a fan layout
+p <- ggtree(tree, layout = "fan") %<+% df + 
+  geom_tippoint(aes(color = cluster), size = 2) + 
+  theme(legend.position = "none") + 
+  scale_color_manual(values = setNames(colors, unique(clusters)))
+
+# Display the plot
+print(p)
+
+
+
+
+
+
+
 
 # are any metadata variables correlated with LBI?
 
-#any noticeable trends in time?
+#any noticeable 1trends in time?
 plot(lbi~as.factor(x05dd),dat)
 plot(lbi~as.factor(x05month),dat)
 plot(lbi~as.factor(x05year),dat)
