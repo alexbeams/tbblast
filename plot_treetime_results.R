@@ -31,7 +31,7 @@ library(ape)
 library(ggplot2)
 library(ggtree)
 library(Biostrings)
-
+library(RColorBrewer)
 
 # read in the .nexus timetree generated from the iq-tree kimura model
 # as well as the data file from Ben S. with lineage info
@@ -198,6 +198,206 @@ p.blastdat + geom_tippoint(aes(color=phone)) +
 # 2. local branching index in the timed trees, seeing if PCA-ish outputs are useful predictors of LBI in a regression
 # 3. Do any of the metadata variables appear significant in a regression predicting local branching index?
 
+###########################################################
+# Calculate the Timed Haplotype Density for the sequences #
+###########################################################
+
+#load in the functions to calculate the THD
+source('thd.R')
+
+#create a hamming distance matrix and plug into the KDE
+fasta_file <- "Malawi_final_filtered.fasta"
+alignment <- readDNAStringSet(fasta_file)
+
+compute_hamming_distance <- function(seq1, seq2) {
+  seq1_chars <- as.character(unlist(strsplit(as.character(seq1), "")))
+  seq2_chars <- as.character(unlist(strsplit(as.character(seq2), "")))
+  sum(seq1_chars != seq2_chars)
+}
+
+# Get the number of sequences
+n <- length(alignment)
+
+# Initialize the distance matrix
+hamming_matrix <- matrix(0, n, n)
+
+# Uncomment to fill the matrix
+#for (i in 1:n) {
+#  for (j in i:n) {
+#    dist <- compute_hamming_distance(alignment[[i]], alignment[[j]])
+#    hamming_matrix[i, j] <- dist
+#    hamming_matrix[j, i] <- dist
+#  }
+#}
+
+load("hamming_matrix.Rdata")
+
+m <- length(alignment[[1]])
+mu <- 5e-4
+timescale <- 2 
+bandwidth <- tmrca2bandwidth(timescale, m , mu)
+thds <- thd(hamming_matrix, bandwidth, m)
+
+# Display hclust tree and thds
+hc <- hclust(as.dist(hamming_matrix))
+
+par(mfrow = c(2,1))
+par(mar = c(1, 5, 1, 5))
+plot(hc, labels = FALSE, xlab = "", main = "", sub = "")
+barplot(thds[hc$order], ylim = rev(range(thds)), ylab = "thd")
+
+
+#plot with color
+colors <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(thds, breaks = 100))]
+ph <- as.phylo(hc)
+par(mfrow=c(1,1))
+plot(ph,type='fan',show.tip.label=F,main='thd for 707 Sequences')
+tiplabels(pch=19,col=colors,cex=1)
+
+#probably want to run thd for each lineage separately. Just looks like
+#	it's picking up lineage 4. Or, maybe just tuning the bandwidth
+#	will do the job...
+
+rownames(hamming_matrix) <- names(alignment)
+colnames(hamming_matrix) <- names(alignment)
+
+lin1inds <- sapply(lin1nms, function(x) which(names(alignment) == x  ))
+lin2inds <- sapply(lin2nms, function(x) which(names(alignment) == x  ))
+lin3inds <- sapply(lin3nms, function(x) which(names(alignment) == x  ))
+lin4inds <- sapply(lin4nms, function(x) which(names(alignment) == x  ))
+linMbovinds <- sapply(linMbovnms, function(x) which(names(alignment) == x  ))
+
+hamming_lin1 <- hamming_matrix[lin1inds,lin1inds]
+hamming_lin2 <- hamming_matrix[lin2inds,lin2inds]
+hamming_lin3 <- hamming_matrix[lin3inds,lin3inds]
+hamming_lin4 <- hamming_matrix[lin4inds,lin4inds]
+hamming_linMbov <- hamming_matrix[linMbovinds,linMbovinds]
+
+mu1 <- 5e-4
+timescale1 <- 2 
+bandwidth1 <- tmrca2bandwidth(timescale1, m , mu1)
+
+mu2 <- 5e-4
+timescale2 <- 2 
+bandwidth2 <- tmrca2bandwidth(timescale2, m , mu2)
+
+mu3 <- 5e-4
+timescale3 <- 2 
+bandwidth3 <- tmrca2bandwidth(timescale3, m , mu3)
+
+mu4 <- 5e-4
+timescale4 <-2 
+bandwidth4 <- tmrca2bandwidth(timescale4, m , mu4)
+
+thd1 <- thd(hamming_lin1, bandwidth1, m)
+thd2 <- thd(hamming_lin2, bandwidth2, m)
+thd3 <- thd(hamming_lin3, bandwidth3, m)
+thd4 <- thd(hamming_lin4, bandwidth4, m)
+thdMbov <- thd(hamming_linMbov, bandwidth, m)
+
+# plot the thds:
+par(mfrow=c(2,2))
+
+plot(thd1)
+plot(thd2)
+plot(thd3)
+plot(thd4)
+
+
+
+
+# Display hclust trees and thds
+hc1 <- hclust(as.dist(hamming_lin1))
+hc2 <- hclust(as.dist(hamming_lin2))
+hc3 <- hclust(as.dist(hamming_lin3))
+hc4 <- hclust(as.dist(hamming_lin4))
+hcMbov <- hclust(as.dist(hamming_linMbov))
+
+#plot with color
+colors1 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(thd1, breaks = 100))]
+colors2 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(thd2, breaks = 100))]
+colors3 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(thd3, breaks = 100))]
+colors4 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(thd4, breaks = 100))]
+colorsMbov <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(thdMbov, breaks = 100))]
+
+ph1 <- as.phylo(hc1)
+ph2 <- as.phylo(hc2)
+ph3 <- as.phylo(hc3)
+ph4 <- as.phylo(hc4)
+phMbov <- as.phylo(hcMbov)
+
+
+# Set the size of each plot (e.g., 600x600 pixels)
+plot_size <- 1200
+# Set the number of rows and columns in the layout
+rows <- 2
+cols <- 2
+
+# Calculate the overall width and height of the image
+width <- cols * plot_size
+height <- rows * plot_size
+
+# Set the resolution (e.g., 300 dpi)
+resolution <- 300
+
+# Create the PNG file
+png(filename = "figures/thd.png", width = width, height = height, res = resolution)
+
+# Set up the plotting layout
+par(mfrow = c(rows, cols))
+
+plot(ph1,type='fan',show.tip.label=F,main='THD for Lineage 1 Sequences')
+tiplabels(pch=19,col=colors1,cex=1)
+
+plot(ph2,type='fan',show.tip.label=F,main='THD for Lineage 2 Sequences')
+tiplabels(pch=19,col=colors2,cex=1)
+
+plot(ph3,type='fan',show.tip.label=F,main='THD for Lineage 3 Sequences')
+tiplabels(pch=19,col=colors3,cex=1)
+
+plot(ph4,type='fan',show.tip.label=F,main='THD for Lineage 4 Sequences')
+tiplabels(pch=19,col=colors4,cex=1)
+
+dev.off()
+
+# Let's examine THD on the maximum likelihood trees to make comparisons with LBI:
+
+thddat <- data.frame(cbind(names(alignment),thds))
+colnames(thddat) <- c('Sequence_name','thd')
+
+dat = merge(blastdat,thddat)
+
+dat$thd <- as.numeric(dat$thd)
+
+      
+p1thd <- p1.timedat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2() + ggtitle('lineage 1')
+
+p2thd <- p2.timedat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 2')
+
+p3thd <- p3.timedat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 3')
+
+p4thd <- p4.timedat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 4')
+
+#pMbovisthd <- pMbovis.timedat + geom_tippoint(aes(color=thd)) + 
+#	scale_color_gradient(high='red',low='blue') +
+#    theme_tree2()+ ggtitle('lineage M.bovis')
+
+thd_plots <- grid.arrange(p1thd,p2thd,p3thd,p4thd, ncol = 2, nrow = 2)
+
+ggsave(filename = "figures/thd_timetrees.png", plot = thd_plots, 
+       width = 16, height = 16, dpi = 300)
+
+
+
+
 
 #########################
 # Local branching index #
@@ -279,7 +479,7 @@ lbi<-function(tree, tau=0.0005,transform=function(x){x}){
   return(lbi)
 }
 
-#generate local branching indices for the untimed trees:
+#generate local branching indices for the untimed trees (by lineage):
 x1 <- lbi(tree1,tau=.00001)
 x1 <- x1[1:Ntip(tree1)]
 x1nms <- tree1$tip.label
@@ -312,7 +512,7 @@ lbinms <- c(x1nms,x2nms,x3nms,x4nms,xMbovisnms)
 lbidat <- data.frame(cbind(lbinms,lbis))
 colnames(lbidat) <- c('Sequence_name','lbi')
 
-dat = merge(blastdat,lbidat)
+dat = merge(dat,lbidat)
 
 dat$lbi <- as.numeric(dat$lbi)
 
@@ -369,8 +569,46 @@ pMbovislbi <- pMbovis.dat + geom_tippoint(aes(color=lbi)) +
 	scale_color_gradient(high='red',low='blue') +
     theme_tree2()+ ggtitle('lineage M.bovis')
 
+lbi_plots <- grid.arrange(p1lbi,p2lbi,p3lbi,p4lbi, ncol = 2, nrow = 2)
 
-#generate local branching indices for the timed trees:
+ggsave(filename = "figures/lbi_untimedtrees.png", plot = lbi_plots, 
+       width = 16, height = 16, dpi = 300)
+
+#plot thd on the untimed trees to compare with lbi
+
+
+p1thd <- p1.dat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2() + ggtitle('lineage 1')
+
+p2thd <- p2.dat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 2')
+
+p3thd <- p3.dat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 3')
+
+p4thd <- p4.dat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 4')
+
+#pMbovisthd <- pMbovis.dat + geom_tippoint(aes(color=thd)) + 
+#	scale_color_gradient(high='red',low='blue') +
+#    theme_tree2()+ ggtitle('lineage M.bovis')
+
+thd_plots <- grid.arrange(p1thd,p2thd,p3thd,p4thd, ncol = 2, nrow = 2)
+
+ggsave(filename = "figures/thd_untimetrees.png", plot = thd_plots, 
+       width = 16, height = 16, dpi = 300)
+
+
+
+
+
+#generate local branching indices for the timed trees (by lineage):
+
+
 xt1 <- lbi(timetree1,tau=.00001)
 xt1 <- xt1[1:Ntip(timetree1)]
 xt1nms <- timetree1$tip.label
@@ -402,7 +640,6 @@ lbits <- c(xt1,xt2,xt3,xt4,xtMbovis)
 lbitnms <- c(xt1nms,xt2nms,xt3nms,xt4nms,xtMbovisnms)
 lbitdat <- data.frame(cbind(lbinms,lbits))
 colnames(lbitdat) <- c('Sequence_name','lbit')
-
 
 dat = merge(dat,lbitdat)
 
@@ -439,6 +676,9 @@ pMbovis.timedat <- pMbovis.timedat %<+% timedatMbovis.merge
 
 # Color the tree based on a metadata column, for example, 'lbit'
 
+library(ggplot2)
+library(gridExtra)
+       
 p1lbit <- p1.timedat + geom_tippoint(aes(color=lbit)) + 
 	scale_color_gradient(high='red',low='blue') +
     theme_tree2() + ggtitle('lineage 1')
@@ -455,152 +695,43 @@ p4lbit <- p4.timedat + geom_tippoint(aes(color=lbit)) +
 	scale_color_gradient(high='red',low='blue') +
     theme_tree2()+ ggtitle('lineage 4')
 
-pMbovislbit <- pMbovis.timedat + geom_tippoint(aes(color=lbit)) + 
+#pMbovislbit <- pMbovis.timedat + geom_tippoint(aes(color=lbit)) + 
+#	scale_color_gradient(high='red',low='blue') +
+#    theme_tree2()+ ggtitle('lineage M.bovis')
+
+lbit_plots <- grid.arrange(p1lbit,p2lbit,p3lbit,p4lbit, ncol = 2, nrow = 2)
+
+ggsave(filename = "figures/lbit.png", plot = lbit_plots, 
+       width = 16, height = 16, dpi = 300)
+
+
+#plot thd on the timed trees to compare with lbi
+
+
+p1thd <- p1.timedat + geom_tippoint(aes(color=thd)) + 
 	scale_color_gradient(high='red',low='blue') +
-    theme_tree2()+ ggtitle('lineage M.bovis')
+    theme_tree2() + ggtitle('lineage 1')
 
+p2thd <- p2.timedat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 2')
 
+p3thd <- p3.timedat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 3')
 
-# Calculate the Timed Haplotype Density for the trees
-#	start with tree4 and timetree4 for now
+p4thd <- p4.timedat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('lineage 4')
 
+#pMbovisthd <- pMbovis.timedat + geom_tippoint(aes(color=thd)) + 
+#	scale_color_gradient(high='red',low='blue') +
+#    theme_tree2()+ ggtitle('lineage M.bovis')
 
-#load in the functions to calculate the THD
-source('thd.R')
+thd_plots <- grid.arrange(p1thd,p2thd,p3thd,p4thd, ncol = 2, nrow = 2)
 
-#create a hamming distance matrix and plug into the KDE
-fasta_file <- "Malawi_final_filtered.fasta"
-alignment <- readDNAStringSet(fasta_file)
-
-compute_hamming_distance <- function(seq1, seq2) {
-  seq1_chars <- as.character(unlist(strsplit(as.character(seq1), "")))
-  seq2_chars <- as.character(unlist(strsplit(as.character(seq2), "")))
-  sum(seq1_chars != seq2_chars)
-}
-
-# Get the number of sequences
-n <- length(alignment)
-
-# Initialize the distance matrix
-hamming_matrix <- matrix(0, n, n)
-
-# Uncomment to fill the matrix
-#for (i in 1:n) {
-#  for (j in i:n) {
-#    dist <- compute_hamming_distance(alignment[[i]], alignment[[j]])
-#    hamming_matrix[i, j] <- dist
-#    hamming_matrix[j, i] <- dist
-#  }
-#}
-
-load("hamming_matrix.Rdata")
-
-m <- length(alignment[[1]])
-mu <- 5e-4
-timescale <- 2 
-bandwidth <- tmrca2bandwidth(timescale, m , mu)
-THD <- thd(hamming_matrix, bandwidth, m)
-
-# Display hclust tree and THDs
-hc <- hclust(as.dist(hamming_matrix))
-
-par(mfrow = c(2,1))
-par(mar = c(1, 5, 1, 5))
-plot(hc, labels = FALSE, xlab = "", main = "", sub = "")
-barplot(THD[hc$order], ylim = rev(range(THD)), ylab = "THD")
-
-
-#plot with color
-colors <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD, breaks = 100))]
-ph <- as.phylo(hc)
-par(mfrow=c(1,1))
-plot(ph,type='fan',show.tip.label=F,main='THD for 707 Sequences')
-tiplabels(pch=19,col=colors,cex=1)
-
-#probably want to run THD for each lineage separately. Just looks like
-#	it's picking up lineage 4. Or, maybe just tuning the bandwidth
-#	will do the job...
-
-rownames(hamming_matrix) <- names(alignment)
-colnames(hamming_matrix) <- names(alignment)
-
-lin1inds <- sapply(lin1nms, function(x) which(names(alignment) == x  ))
-lin2inds <- sapply(lin2nms, function(x) which(names(alignment) == x  ))
-lin3inds <- sapply(lin3nms, function(x) which(names(alignment) == x  ))
-lin4inds <- sapply(lin4nms, function(x) which(names(alignment) == x  ))
-linMbovinds <- sapply(linMbovnms, function(x) which(names(alignment) == x  ))
-
-hamming_lin1 <- hamming_matrix[lin1inds,lin1inds]
-hamming_lin2 <- hamming_matrix[lin2inds,lin2inds]
-hamming_lin3 <- hamming_matrix[lin3inds,lin3inds]
-hamming_lin4 <- hamming_matrix[lin4inds,lin4inds]
-hamming_linMbov <- hamming_matrix[linMbovinds,linMbovinds]
-
-mu1 <- 5e-4
-timescale1 <- 2 
-bandwidth1 <- tmrca2bandwidth(timescale1, m , mu1)
-
-mu2 <- 5e-4
-timescale2 <- 2 
-bandwidth2 <- tmrca2bandwidth(timescale2, m , mu2)
-
-mu3 <- 5e-4
-timescale3 <- 2 
-bandwidth3 <- tmrca2bandwidth(timescale3, m , mu3)
-
-mu4 <- 5e-4
-timescale4 <-2 
-bandwidth4 <- tmrca2bandwidth(timescale4, m , mu4)
-
-THD1 <- thd(hamming_lin1, bandwidth1, m)
-THD2 <- thd(hamming_lin2, bandwidth2, m)
-THD3 <- thd(hamming_lin3, bandwidth3, m)
-THD4 <- thd(hamming_lin4, bandwidth4, m)
-THDMbov <- thd(hamming_linMbov, bandwidth, m)
-
-# plot the THDs:
-par(mfrow=c(2,2))
-
-plot(THD1)
-plot(THD2)
-plot(THD3)
-plot(THD4)
-
-
-
-
-# Display hclust trees and THDs
-hc1 <- hclust(as.dist(hamming_lin1))
-hc2 <- hclust(as.dist(hamming_lin2))
-hc3 <- hclust(as.dist(hamming_lin3))
-hc4 <- hclust(as.dist(hamming_lin4))
-hcMbov <- hclust(as.dist(hamming_linMbov))
-
-#plot with color
-colors1 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD1, breaks = 100))]
-colors2 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD2, breaks = 100))]
-colors3 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD3, breaks = 100))]
-colors4 <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THD4, breaks = 100))]
-colorsMbov <- colorRampPalette(c("blue", "red"))(100)[as.numeric(cut(THDMbov, breaks = 100))]
-
-ph1 <- as.phylo(hc1)
-ph2 <- as.phylo(hc2)
-ph3 <- as.phylo(hc3)
-ph4 <- as.phylo(hc4)
-phMbov <- as.phylo(hcMbov)
-
-par(mfrow=c(2,2))
-plot(ph1,type='fan',show.tip.label=F,main='THD for Lineage 1 Sequences')
-tiplabels(pch=19,col=colors1,cex=1)
-
-plot(ph2,type='fan',show.tip.label=F,main='THD for Lineage 2 Sequences')
-tiplabels(pch=19,col=colors2,cex=1)
-
-plot(ph3,type='fan',show.tip.label=F,main='THD for Lineage 3 Sequences')
-tiplabels(pch=19,col=colors3,cex=1)
-
-plot(ph4,type='fan',show.tip.label=F,main='THD for Lineage 4 Sequences')
-tiplabels(pch=19,col=colors4,cex=1)
+ggsave(filename = "figures/thd_timetrees.png", plot = thd_plots, 
+       width = 16, height = 16, dpi = 300)
 
 
 
