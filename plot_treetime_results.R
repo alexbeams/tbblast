@@ -574,6 +574,28 @@ ggsave(filename = "figures/thd_untimetrees.png", plot = thd_plots,
        width = 16, height = 16, dpi = 300)
 
 
+#try to just plot the LBI and THD for the untimed lineage 4 tree
+# below node NODE_0000206
+
+subclade <- extract.clade(timetree4, 'NODE_0000206')
+psub.dat <- ggtree(subclade,layout='circular')
+
+psub.dat <- psub.dat %<+% dat4.merge
+
+psublbi <- psub.dat + geom_tippoint(aes(color=lbi)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('subclade of lineage 4')
+
+psubthd <- psub.dat + geom_tippoint(aes(color=thd)) + 
+	scale_color_gradient(high='red',low='blue') +
+    theme_tree2()+ ggtitle('subclade of lineage 4')
+
+ggsave(filename = "figures/psubthd.png", plot = psubthd, 
+       width = 16, height = 16, dpi = 300)
+
+ggsave(filename = "figures/psublbi.png", plot = psublbi, 
+       width = 16, height = 16, dpi = 300)
+
 
 
 
@@ -703,6 +725,31 @@ thd_plots <- grid.arrange(p1thd,p2thd,p3thd,p4thd, ncol = 2, nrow = 2)
 
 ggsave(filename = "figures/thd_timetrees.png", plot = thd_plots, 
        width = 16, height = 16, dpi = 300)
+
+
+# plot LBI vs THD
+# Set the size of each plot (e.g., 600x600 pixels)
+plot_size <- 1200
+# Set the number of rows and columns in the layout
+rows <- 1
+cols <- 1
+
+# Calculate the overall width and height of the image
+width <- cols * plot_size
+height <- rows * plot_size
+
+# Set the resolution (e.g., 300 dpi)
+resolution <- 300
+
+# Create the PNG file
+png(filename = "figures/thd_lbi.png", width = width, height = height, res = resolution)
+
+# Set up the plotting layout
+par(mfrow = c(rows, cols))
+
+plot(thd4~x4,xlab='LBI',ylab='THD',main='Lineage 4')
+
+dev.off()
 
 
 
