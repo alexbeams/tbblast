@@ -1,0 +1,265 @@
+rm(list=ls())
+
+# Calculate sequence densities using patristic distances weighted by decaying exponentials
+#	(similar to THD and LBI)
+ 
+library(ape)
+library(ggplot2)
+library(ggtree)
+library(Biostrings)
+library(RColorBrewer)
+library(gridExtra)
+
+# read in the .nexus timetree generated from the iq-tree kimura model
+# as well as the data file from Ben S. with lineage info
+
+#read in the timed tree:
+#tree <- read.nexus('constant_site_correction_kimura/treetime_results/timetree.nexus')
+
+# read in the un-timed tree:
+tree <- read.tree('constant_site_correction_kimura/Malawi_final_filtered.treefile')
+
+tree1 <- read.tree('lineage1_tree.newick')
+tree2 <- read.tree('lineage2_tree.newick')
+tree3 <- read.tree('lineage3_tree.newick')
+tree4 <- read.tree('lineage4_tree.newick')
+treeMbovis <- read.tree('lineageMbovis_tree.newick')
+
+#keep track of the sequences in each lineage
+lin1nms <- tree1$tip.label
+lin2nms <- tree2$tip.label
+lin3nms <- tree3$tip.label
+lin4nms <- tree4$tip.label
+linMbovnms <- treeMbovis$tip.label
+
+timetree1 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage1_results/timetree.nexus')
+timetree2 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage2_results/timetree.nexus')
+timetree3 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage3_results/timetree.nexus')
+timetree4 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage4_results/timetree.nexus')
+timetreeMbovis <- ape::read.nexus('constant_site_correction_kimura/treetime_lineageMbovis_results/timetree.nexus')
+
+# calculate the patristic distances
+dist.tree1 <- dist.nodes(tree1)
+dist.tree2 <- dist.nodes(tree2)
+dist.tree3 <- dist.nodes(tree3)
+dist.tree4 <- dist.nodes(tree4)
+
+dist.timetree1 <- dist.nodes(timetree1)
+dist.timetree2 <- dist.nodes(timetree2)
+dist.timetree3 <- dist.nodes(timetree3)
+dist.timetree4 <- dist.nodes(timetree4)
+
+
+# set bandwidth parameters
+tau.tree1 <- 0.0625 * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
+tau.tree2 <- 0.0625 * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
+tau.tree3 <- 0.0625 * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
+tau.tree4 <- 0.0625 * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
+
+tau.timetree1 <- 0.0625 * mean(dist.timetree1[upper.tri(dist.timetree1,diag=F)])
+tau.timetree2 <- 0.0625 * mean(dist.timetree2[upper.tri(dist.timetree2,diag=F)])
+tau.timetree3 <- 0.0625 * mean(dist.timetree3[upper.tri(dist.timetree3,diag=F)])
+tau.timetree4 <- 0.0625 * mean(dist.timetree4[upper.tri(dist.timetree4,diag=F)])
+
+# calculate the genome densities using exp(-d/tau)
+seqden.tree1 <- apply(dist.tree1, 1, function(x) sum(exp(-x/tau.tree1)) )
+seqden.tree2 <- apply(dist.tree2, 1, function(x) sum(exp(-x/tau.tree2)) )
+seqden.tree3 <- apply(dist.tree3, 1, function(x) sum(exp(-x/tau.tree3)) )
+seqden.tree4 <- apply(dist.tree4, 1, function(x) sum(exp(-x/tau.tree4)) )
+
+#par(mfrow=c(2,2))
+#plot(seqden.tree1)
+#plot(seqden.tree2)
+#plot(seqden.tree3)
+#plot(seqden.tree4)
+
+
+seqden.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/tau.timetree1)) )
+seqden.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/tau.timetree2)) )
+seqden.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/tau.timetree3)) )
+seqden.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/tau.timetree4)) )
+
+#par(mfrow=c(2,2))
+#plot(seqden.timetree1)
+#plot(seqden.timetree2)
+#plot(seqden.timetree3)
+#plot(seqden.timetree4)
+
+#need to assign labels to the internal nodes of the trees:
+tree1$node.label <- paste0('node',1:tree1$Nnode)
+tree2$node.label <- paste0('node',1:tree2$Nnode)
+tree3$node.label <- paste0('node',1:tree3$Nnode)
+tree4$node.label <- paste0('node',1:tree4$Nnode)
+
+timetree1$node.label <- paste0('node',1:timetree1$Nnode)
+timetree2$node.label <- paste0('node',1:timetree2$Nnode)
+timetree3$node.label <- paste0('node',1:timetree3$Nnode)
+timetree4$node.label <- paste0('node',1:timetree4$Nnode)
+
+# set up dataframes with the seqden values for plotting
+df.tree1 <- data.frame(Sequence_name = c(tree1$tip.label,tree1$node.label),
+	seqden=seqden.tree1)
+
+df.tree2 <- data.frame(Sequence_name = c(tree2$tip.label,tree2$node.label),
+	seqden=seqden.tree2)
+
+df.tree3 <- data.frame(Sequence_name = c(tree3$tip.label,tree3$node.label),
+	seqden=seqden.tree3)
+
+df.tree4 <- data.frame(Sequence_name = c(tree4$tip.label,tree4$node.label),
+	seqden=seqden.tree4)
+
+df.timetree1 <- data.frame(Sequence_name = c(timetree1$tip.label,timetree1$node.label),
+	seqden=seqden.timetree1)
+
+df.timetree2 <- data.frame(Sequence_name = c(timetree2$tip.label,timetree2$node.label),
+	seqden=seqden.timetree2)
+
+df.timetree3 <- data.frame(Sequence_name = c(timetree3$tip.label,timetree3$node.label),
+	seqden=seqden.timetree3)
+
+df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.label),
+	seqden=seqden.timetree4)
+
+# look at some other functions of distance as well, e.g. variance
+df.tree1$var <- apply(dist.tree1, 1, var)
+df.tree2$var <- apply(dist.tree2, 1, var)
+df.tree3$var <- apply(dist.tree3, 1, var)
+df.tree4$var <- apply(dist.tree4, 1, var)
+
+df.timetree1$var <- apply(dist.timetree1, 1, var)
+df.timetree2$var <- apply(dist.timetree2, 1, var)
+df.timetree3$var <- apply(dist.timetree3, 1, var)
+df.timetree4$var <- apply(dist.timetree4, 1, var)
+
+df.tree1$mean <- apply(dist.tree1, 1, mean)
+df.tree2$mean <- apply(dist.tree2, 1, mean)
+df.tree3$mean <- apply(dist.tree3, 1, mean)
+df.tree4$mean <- apply(dist.tree4, 1, mean)
+
+df.timetree1$mean <- apply(dist.timetree1, 1, mean)
+df.timetree2$mean <- apply(dist.timetree2, 1, mean)
+df.timetree3$mean <- apply(dist.timetree3, 1, mean)
+df.timetree4$mean <- apply(dist.timetree4, 1, mean)
+
+# plotting parameters
+treelayout <- 'circular' 
+dotsize <- 1
+
+
+p.tree1 <- ggtree(tree1, layout = treelayout)
+p.tree2 <- ggtree(tree2, layout = treelayout)
+p.tree3 <- ggtree(tree3, layout = treelayout)
+p.tree4 <- ggtree(tree4, layout = treelayout)
+
+p.timetree1 <- ggtree(timetree1, layout = treelayout)
+p.timetree2 <- ggtree(timetree2, layout = treelayout)
+p.timetree3 <- ggtree(timetree3, layout = treelayout)
+p.timetree4 <- ggtree(timetree4, layout = treelayout)
+
+# Add the data frames to the plots
+p.tree1 <- p.tree1 %<+% df.tree1
+p.tree2 <- p.tree2 %<+% df.tree2
+p.tree3 <- p.tree3 %<+% df.tree3
+p.tree4 <- p.tree4 %<+% df.tree4
+
+p.timetree1 <- p.timetree1 %<+% df.timetree1
+p.timetree2 <- p.timetree2 %<+% df.timetree2
+p.timetree3 <- p.timetree3 %<+% df.timetree3
+p.timetree4 <- p.timetree4 %<+% df.timetree4
+
+p.seqden.tree1 <- p.tree1 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: tree 1')
+
+p.seqden.tree2 <- p.tree2 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: tree 2')
+
+p.seqden.tree3 <- p.tree3 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: tree 3')
+
+p.seqden.tree4 <- p.tree4 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: tree 4')
+
+p.seqden.timetree1 <- p.timetree1 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: timetree 1')
+
+p.seqden.timetree2 <- p.timetree2 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: timetree 2')
+
+p.seqden.timetree3 <- p.timetree3 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: timetree 3')
+
+p.seqden.timetree4 <- p.timetree4 + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: timetree 4')
+
+p.var.tree4 <- p.tree4 + geom_tippoint(aes(color=var),size=dotsize) +
+	geom_nodepoint(aes(color=var),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Distance variance: tree 4')
+
+p.var.timetree4 <- p.timetree4 + geom_tippoint(aes(color=var),size=dotsize) +
+	geom_nodepoint(aes(color=var),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Distance variance: timetree 4')
+
+p.mean.tree4 <- p.tree4 + geom_tippoint(aes(color=mean),size=dotsize) +
+	geom_nodepoint(aes(color=mean),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Mean patristic distance: tree 4')
+
+p.mean.timetree4 <- p.timetree4 + geom_tippoint(aes(color=mean),size=dotsize) +
+	geom_nodepoint(aes(color=mean),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Mean patristic distance: timetree 4')
+
+# load in the metadata and the lineage/drug resistance data
+drugdat <- read.csv('Malawi_final_stats.csv')
+blastdat <- read.csv('BLAST_ePAL_SeqID_NoGPS.csv')
+names(drugdat)[1] <- 'Sequence_name'
+
+# merge them by sequence name
+dat <- merge(blastdat, drugdat, by='Sequence_name')
+
+# subset the data by lineage
+
+dat1 <- dat[dat$Major.Lineage=='lineage1',]
+dat2 <- dat[dat$Major.Lineage=='lineage2',]
+dat3 <- dat[dat$Major.Lineage=='lineage3',]
+dat4 <- dat[dat$Major.Lineage=='lineage4',]
+
+# append the sequence density values
+dat1 <- merge(dat1, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
+dat2 <- merge(dat2, df.tree2[,c('Sequence_name','seqden')], by='Sequence_name') 
+dat3 <- merge(dat3, df.tree3[,c('Sequence_name','seqden')], by='Sequence_name') 
+dat4 <- merge(dat4, df.tree4[,c('Sequence_name','seqden')], by='Sequence_name') 
+
+
+
