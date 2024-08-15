@@ -261,5 +261,64 @@ dat2 <- merge(dat2, df.tree2[,c('Sequence_name','seqden')], by='Sequence_name')
 dat3 <- merge(dat3, df.tree3[,c('Sequence_name','seqden')], by='Sequence_name') 
 dat4 <- merge(dat4, df.tree4[,c('Sequence_name','seqden')], by='Sequence_name') 
 
+# create some convenient names for groups of variables
 
+# redundant columns, unhelpful columns, 
+# 	or columns with too many NA's, or minimal variation...
+discardnms <- c('x01area','hittbclass','labid_duplicates','labid_january',
+	'Number_paired_reads','Perc_mapped_H37Rv','Mean_Coverage',
+	'OriginalRun','date','pid','tgenid','labid_links','Drug','Multi.drug')
+
+#questions from the x01 form - filled out when clinicians register patients for the 
+#	TB database
+xnms <- names(dat)[5:32]
+
+# healthcare-seeking behavior:
+qechnms <- names(dat)[77:104]
+
+# history of working in healthcare settings:
+hsworknms <- names(dat)[105:113]
+
+# visited an outpatient clinic?
+opnms <- names(dat)[116:127]
+
+# visited an hiv clinic?
+hivclinnms <- names(dat)[128:139]
+
+# symptoms
+symnms <- names(dat)[45:51]
+
+# proxy means test for poverty:
+povnms <- c('peopleinhh','sleepinsameroom','cookinglocation','smoke',
+	'knowanyonewithtb','relationshipwithtb','haselectricity','fridge',
+	'carmotobike','bed','radio','phone','levelschool','sleepwithtb',
+	'blantyreresident')
+
+# characteristics of the TB diagnosis
+tbdxnms <- c('l28smear','l29xpert','l30cultures','l32id','smeartest','smearstatus',
+	'tbclass','tbategory','genexpertresult','tbsymptomsidentified','tbcategory',
+	'culture_positive')
+
+# hiv-related characteristics
+hivnms <- c('ipt','hivstatus','arvtreatment','arvduration','wereyoutakingipt')
+
+# antibiotic information
+abxnms <- c('trimoxazole','rifresult')
+
+# demographic variables
+demnms <- c('sex','age','agegroup','ageest')
+
+# abx resistance info - second two appear redundant
+resnms <- c('Drug.resistance.Tbprofiler')
+
+# not sure what this one is - it's different from 'outcome'
+huhnms <- c('outcome_success')
+
+# the remaining columns are the sequence name, the ward ID, the outcome of treatment,
+#	datecreated (differs from x05regdate) and Major.Lineage:
+setdiff(names(dat), c(discardnms,xnms,qechnms,hsworknms,opnms,hivclinnms,symnms,
+	povnms,tbdxnms,hivnms,abxnms,demnms,resnms,huhnms))
+
+dat <- rbind(dat1,dat2,dat3,dat4)
+dat$anyhivclinic <- as.numeric(apply(dat[,hivclinnms], 1, function(x) 'Yes' %in% x))
 
