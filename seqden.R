@@ -278,6 +278,7 @@ qechnms <- names(dat)[77:104]
 
 # history of working in healthcare settings:
 hsworknms <- names(dat)[105:113]
+# only 4 people answered 'Yes'; the majority answered 'No', but lots of NAs.
 
 # visited an outpatient clinic?
 opnms <- names(dat)[116:127]
@@ -320,5 +321,106 @@ setdiff(names(dat), c(discardnms,xnms,qechnms,hsworknms,opnms,hivclinnms,symnms,
 	povnms,tbdxnms,hivnms,abxnms,demnms,resnms,huhnms))
 
 dat <- rbind(dat1,dat2,dat3,dat4)
+
+# include an indicator for whether the person visited anyhivclinic, or anyop:
 dat$anyhivclinic <- as.numeric(apply(dat[,hivclinnms], 1, function(x) 'Yes' %in% x))
+dat$anyop <- as.numeric(apply(dat[,opnms],1,function(x) 'Yes' %in% x))
+
+
+# which variables do we think matter the most? to start, aggregate all of the hivclinic
+#	results into 'anyhivclinic'
+
+modnms <- c('sex','age','hivstatus','arvtreatment','ipt','anyhivclinic','outcome',
+	'tbsymptomsidentified','x04fac_code',symnms)
+
+# some of these variables need to be reorganized before going into a regression:
+
+# how many NAs are there for these?
+
+sum(is.na(dat$Major.Lineage))
+sum(is.na(dat$sex))
+sum(is.na(dat$age))
+sum(is.na(dat$hivstatus))
+sum(is.na(dat$anyhivclinic))
+sum(is.na(dat$outcome))
+sum(is.na(dat$tbsymptomsidentified))
+sum(is.na(dat$x04fac_code))
+
+# 115 NAs in tbsymptomsidentified, 10 NAs in outcome, 
+#	16 NAs in hivstatus - not too bad. 
+# Do any of these variables need to be combined into a single factor?
+
+# hivstatus and anyhivclinic are not exactly the same variable:
+table(dat$hivstatus, dat$anyhivclinic)
+
+# arvtreatment only has data points if hivstatus='Positive':
+table(dat$hivstatus, dat$arvtreatment)
+
+# coughduration obviously reported only if sympcough='Yes':
+table(dat$sympcough,dat$coughduration)
+
+# is tbsymptomsidentified a level of the responses in symnms?
+dat$anysymptom <- apply(dat[,symnms],1,function(x) 'Yes' %in% x)
+#	no - only 1 person in the entire dataset does not have a symptom
+
+#how many of the symptoms listed in symnms (excluding coughduration) do people
+#	in the data have?
+dat$numsymptoms <- apply(dat[,symnms[1:6]],1,function(x) sum(x=='Yes'))
+hist(dat$numsymptoms)
+# 4 symptoms is the most common 
+
+# 115 individuals NA for tbsymptomsidenified:
+sum(is.na(dat$tbsymptomsidentified))
+# sort of perplexing that this would be totally unrelated to the type of symptoms
+#	reported
+ 
+mod <- lm(log(seqden)~as.factor(Major.Lineage) + as.factor(sex) + age + as.factor(hivstatus) +
+	as.factor(anyhivclinic) + as.factor(outcome) + as.factor(tbsymptomsidentified) + 
+	as.factor(x04fac_code) + numsymptoms, dat )
+
+# look at the variables in isolation:
+
+# sex and age might matter on their own:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(sex),dat))
+
+summary(lm(log(seqden)~as.factor(Major.Lineage)+age,dat))
+# this is probably meaningless. The magnitude of the effect is pretty small,
+#	but maybe it is interesting that newer infections aren't in the elderly
+
+
+# no signal from hivstatus:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(hivstatus),dat))
+
+# no signal from anyhivclinic:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(anyhivclinic),dat))
+
+# no signal from outcome:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(outcome),dat))
+
+# no signal from tbsymptomsidentified (but this had 115 NAs):
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(tbsymptomsidentified),dat))
+
+# no signal from x04fac_code:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(x04fac_code),dat))
+
+# strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
+#	are Sensitive:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(Drug.resistance.Tbprofiler),dat))
+# However: of 701 rows, 667 sensitivee, 30 resistant, 4 are MDR
+table(dat$Drug.resistance.Tbprofiler)
+
+# no signal from anyop:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(anyop),dat))
+
+
+# no signal from tbcategory:
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(tbcategory),dat))
+
+# no signal from tbclass
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(tbclass),dat))
+
+# no signal from l28smear 
+summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(l28smear),dat))
+
+
 
