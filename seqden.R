@@ -9,6 +9,7 @@ library(ggtree)
 library(Biostrings)
 library(RColorBrewer)
 library(gridExtra)
+library(lme4)
 
 # read in the .nexus timetree generated from the iq-tree kimura model
 # as well as the data file from Ben S. with lineage info
@@ -44,6 +45,9 @@ dist.tree2 <- dist.nodes(tree2)
 dist.tree3 <- dist.nodes(tree3)
 dist.tree4 <- dist.nodes(tree4)
 
+# also for the ML tree with all of the lineages:
+dist.tree <- dist.nodes(tree)
+
 dist.timetree1 <- dist.nodes(timetree1)
 dist.timetree2 <- dist.nodes(timetree2)
 dist.timetree3 <- dist.nodes(timetree3)
@@ -51,6 +55,8 @@ dist.timetree4 <- dist.nodes(timetree4)
 
 
 # set bandwidth parameters
+tau.tree <- 0.0625 * mean(dist.tree[upper.tri(dist.tree,diag=F)])
+
 tau.tree1 <- 0.0625 * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
 tau.tree2 <- 0.0625 * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
 tau.tree3 <- 0.0625 * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
@@ -62,6 +68,8 @@ tau.timetree3 <- 0.0625 * mean(dist.timetree3[upper.tri(dist.timetree3,diag=F)])
 tau.timetree4 <- 0.0625 * mean(dist.timetree4[upper.tri(dist.timetree4,diag=F)])
 
 # calculate the genome densities using exp(-d/tau)
+seqden.tree <- apply(dist.tree, 1, function(x) sum(exp(-x/tau.tree)) )
+
 seqden.tree1 <- apply(dist.tree1, 1, function(x) sum(exp(-x/tau.tree1)) )
 seqden.tree2 <- apply(dist.tree2, 1, function(x) sum(exp(-x/tau.tree2)) )
 seqden.tree3 <- apply(dist.tree3, 1, function(x) sum(exp(-x/tau.tree3)) )
@@ -86,6 +94,7 @@ seqden.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/tau.timetree
 #plot(seqden.timetree4)
 
 #need to assign labels to the internal nodes of the trees:
+tree$node.label <- paste0('node',1:tree$Nnode)
 tree1$node.label <- paste0('node',1:tree1$Nnode)
 tree2$node.label <- paste0('node',1:tree2$Nnode)
 tree3$node.label <- paste0('node',1:tree3$Nnode)
@@ -97,6 +106,9 @@ timetree3$node.label <- paste0('node',1:timetree3$Nnode)
 timetree4$node.label <- paste0('node',1:timetree4$Nnode)
 
 # set up dataframes with the seqden values for plotting
+df.tree <- data.frame(Sequence_name = c(tree$tip.label,tree$node.label),
+	seqden=seqden.tree)
+
 df.tree1 <- data.frame(Sequence_name = c(tree1$tip.label,tree1$node.label),
 	seqden=seqden.tree1)
 
@@ -122,6 +134,8 @@ df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.
 	seqden=seqden.timetree4)
 
 # look at some other functions of distance as well, e.g. variance
+df.tree$var <- apply(dist.tree, 1, var)
+
 df.tree1$var <- apply(dist.tree1, 1, var)
 df.tree2$var <- apply(dist.tree2, 1, var)
 df.tree3$var <- apply(dist.tree3, 1, var)
@@ -131,6 +145,8 @@ df.timetree1$var <- apply(dist.timetree1, 1, var)
 df.timetree2$var <- apply(dist.timetree2, 1, var)
 df.timetree3$var <- apply(dist.timetree3, 1, var)
 df.timetree4$var <- apply(dist.timetree4, 1, var)
+
+df.tree$mean <- apply(dist.tree, 1, mean)
 
 df.tree1$mean <- apply(dist.tree1, 1, mean)
 df.tree2$mean <- apply(dist.tree2, 1, mean)
@@ -146,6 +162,7 @@ df.timetree4$mean <- apply(dist.timetree4, 1, mean)
 treelayout <- 'circular' 
 dotsize <- 1
 
+p.tree <- ggtree(tree, layout = treelayout)
 
 p.tree1 <- ggtree(tree1, layout = treelayout)
 p.tree2 <- ggtree(tree2, layout = treelayout)
@@ -158,6 +175,8 @@ p.timetree3 <- ggtree(timetree3, layout = treelayout)
 p.timetree4 <- ggtree(timetree4, layout = treelayout)
 
 # Add the data frames to the plots
+p.tree <- p.tree %<+% df.tree
+
 p.tree1 <- p.tree1 %<+% df.tree1
 p.tree2 <- p.tree2 %<+% df.tree2
 p.tree3 <- p.tree3 %<+% df.tree3
@@ -167,6 +186,12 @@ p.timetree1 <- p.timetree1 %<+% df.timetree1
 p.timetree2 <- p.timetree2 %<+% df.timetree2
 p.timetree3 <- p.timetree3 %<+% df.timetree3
 p.timetree4 <- p.timetree4 %<+% df.timetree4
+
+p.seqden.tree <- p.tree + geom_tippoint(aes(color=seqden),size=dotsize) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Sequence density: ML tree')
 
 p.seqden.tree1 <- p.tree1 + geom_tippoint(aes(color=seqden),size=dotsize) +
 	geom_nodepoint(aes(color=seqden),size=dotsize) +
@@ -248,7 +273,7 @@ names(drugdat)[1] <- 'Sequence_name'
 # merge them by sequence name
 dat <- merge(blastdat, drugdat, by='Sequence_name')
 
-# subset the data by lineage
+# subset the data by lineage to generate sequence densities separetely by linage
 
 dat1 <- dat[dat$Major.Lineage=='lineage1',]
 dat2 <- dat[dat$Major.Lineage=='lineage2',]
@@ -256,10 +281,13 @@ dat3 <- dat[dat$Major.Lineage=='lineage3',]
 dat4 <- dat[dat$Major.Lineage=='lineage4',]
 
 # append the sequence density values
+dat <- merge(dat, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
+
 dat1 <- merge(dat1, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
 dat2 <- merge(dat2, df.tree2[,c('Sequence_name','seqden')], by='Sequence_name') 
 dat3 <- merge(dat3, df.tree3[,c('Sequence_name','seqden')], by='Sequence_name') 
 dat4 <- merge(dat4, df.tree4[,c('Sequence_name','seqden')], by='Sequence_name') 
+
 
 # create some convenient names for groups of variables
 
@@ -373,54 +401,135 @@ hist(dat$numsymptoms)
 sum(is.na(dat$tbsymptomsidentified))
 # sort of perplexing that this would be totally unrelated to the type of symptoms
 #	reported
- 
-mod <- lm(log(seqden)~as.factor(Major.Lineage) + as.factor(sex) + age + as.factor(hivstatus) +
-	as.factor(anyhivclinic) + as.factor(outcome) + as.factor(tbsymptomsidentified) + 
-	as.factor(x04fac_code) + numsymptoms, dat )
 
-# look at the variables in isolation:
+# create dataframes for each lineage
+dat1 <- dat[dat$Major.Lineage=='lineage1',]
+dat2 <- dat[dat$Major.Lineage=='lineage2',]
+dat3 <- dat[dat$Major.Lineage=='lineage3',]
+dat4 <- dat[dat$Major.Lineage=='lineage4',]
+
+mod <- lm(log(seqden)~as.factor(sex) + age + as.factor(hivstatus) +
+	as.factor(anyhivclinic) + as.factor(outcome) + as.factor(tbsymptomsidentified) + 
+	as.factor(x04fac_code) + numsymptoms, dat4 )
+
+# look at the variables in isolation for lineage 4:
 
 # sex and age might matter on their own:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(sex),dat))
+summary(lm(log(seqden)~as.factor(sex),dat4))
 
-summary(lm(log(seqden)~as.factor(Major.Lineage)+age,dat))
-# this is probably meaningless. The magnitude of the effect is pretty small,
-#	but maybe it is interesting that newer infections aren't in the elderly
-
+# this may be meaningless. The magnitude of the effect is pretty small
+summary(lm(log(seqden)~age,dat4))
 
 # no signal from hivstatus:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(hivstatus),dat))
+summary(lm(log(seqden)~as.factor(hivstatus),dat4))
 
 # no signal from anyhivclinic:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(anyhivclinic),dat))
+summary(lm(log(seqden)~as.factor(anyhivclinic),dat4))
 
 # no signal from outcome:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(outcome),dat))
+summary(lm(log(seqden)~as.factor(outcome),dat4))
 
 # no signal from tbsymptomsidentified (but this had 115 NAs):
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(tbsymptomsidentified),dat))
+summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat4))
 
 # no signal from x04fac_code:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(x04fac_code),dat))
+summary(lm(log(seqden)~as.factor(x04fac_code),dat4))
 
 # strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
 #	are Sensitive:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(Drug.resistance.Tbprofiler),dat))
+summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler),dat4))
 # However: of 701 rows, 667 sensitivee, 30 resistant, 4 are MDR
-table(dat$Drug.resistance.Tbprofiler)
+table(dat4$Drug.resistance.Tbprofiler)
 
 # no signal from anyop:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(anyop),dat))
+summary(lm(log(seqden)~as.factor(anyop),dat4))
 
 
 # no signal from tbcategory:
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(tbcategory),dat))
+summary(lm(log(seqden)~as.factor(tbcategory),dat4))
 
 # no signal from tbclass
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(tbclass),dat))
+summary(lm(log(seqden)~as.factor(tbclass),dat4))
 
 # no signal from l28smear 
-summary(lm(log(seqden)~as.factor(Major.Lineage)+as.factor(l28smear),dat))
+summary(lm(log(seqden)~as.factor(l28smear),dat4))
+
+
+# what about lineage 1?
+
+# sex and age might matter on their own:
+summary(lm(log(seqden)~as.factor(sex),dat1))
+
+# this may be meaningless. The magnitude of the effect is pretty small
+summary(lm(log(seqden)~age,dat1))
+
+# no signal from hivstatus:
+summary(lm(log(seqden)~as.factor(hivstatus),dat1))
+
+# no signal from anyhivclinic:
+summary(lm(log(seqden)~as.factor(anyhivclinic),dat1))
+
+# no signal from outcome:
+summary(lm(log(seqden)~as.factor(outcome),dat1))
+
+# no signal from tbsymptomsidentified (but this had 115 NAs):
+summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat1))
+
+# no signal from x04fac_code:
+summary(lm(log(seqden)~as.factor(x04fac_code),dat1))
+
+# strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
+#	are Sensitive:
+summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler),dat1))
+# However: of 99 rows, 91 sensitivee, 8 resistant, 0 are MDR
+table(dat1$Drug.resistance.Tbprofiler)
+
+# no signal from anyop:
+summary(lm(log(seqden)~as.factor(anyop),dat1))
+
+
+# no signal from tbcategory:
+summary(lm(log(seqden)~as.factor(tbcategory),dat1))
+
+# no signal from tbclass
+summary(lm(log(seqden)~as.factor(tbclass),dat1))
+
+# no signal from l28smear 
+summary(lm(log(seqden)~as.factor(l28smear),dat1))
+
+
+# what about numsymptoms?
+summary(lm(log(seqden)~numsymptoms,dat2))
+
+
+# some other interesting plots:
+
+plot(seqden~as.factor(smearstatus),dat4)
+
+plot(seqden~as.factor(Major.Lineage),dat)
+
+plot(seqden~as.factor(Drug.resistance.Tbprofiler),dat)
+
+plot(seqden~as.factor(outcome),dat)
+
+plot(seqden~as.factor(agegroup),dat)
+
+plot(seqden~as.factor(hivstatus),dat)
+
+plot(seqden~as.factor(hivstatus),dat2)
+
+
+plot(seqden~as.factor(ipt),dat3)
+plot(seqden~as.factor(ipt),dat)
+
+# Unknown_Inconclusive only has 2 entries
+plot(seqden~as.factor(smearstatus),dat)
+
+# are the relationships different for different lineages?
+plot(seqden~as.factor(trimoxazole),dat)
+
+plot(seqden~as.factor(rifresult),dat1)
+plot(seqden~as.factor(rifresult),dat4)
 
 
 
