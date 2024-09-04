@@ -53,19 +53,102 @@ dist.timetree2 <- dist.nodes(timetree2)
 dist.timetree3 <- dist.nodes(timetree3)
 dist.timetree4 <- dist.nodes(timetree4)
 
+# what tau values produce the most variance in the sequence density?
+getseqden <- function(tree,tau){
+	treedist <- dist.nodes(tree)
+	tau <- tau * mean(treedist[upper.tri(treedist,diag=F)])	
+	seqden <- apply(treedist,1,function(x) sum(exp(-x/tau)) )
+	return( seqden)
+}
+
+logtaus <- seq(-3,3,length=60)
+varseqdens.tree <- sapply(exp(logtaus), function(x) var(getseqden(tree,x)))
+varseqdens.tree1 <- sapply(exp(logtaus), function(x) var(getseqden(tree1,x)))
+varseqdens.tree2 <- sapply(exp(logtaus), function(x) var(getseqden(tree2,x)))
+varseqdens.tree3 <- sapply(exp(logtaus), function(x) var(getseqden(tree3,x)))
+varseqdens.tree4 <- sapply(exp(logtaus), function(x) var(getseqden(tree4,x)))
+
+#rescale these for plotting
+varseqdens.tree <- varseqdens.tree/max(varseqdens.tree) 
+varseqdens.tree1 <- varseqdens.tree1/max(varseqdens.tree1) 
+varseqdens.tree2 <- varseqdens.tree2/max(varseqdens.tree2) 
+varseqdens.tree3 <- varseqdens.tree3/max(varseqdens.tree3) 
+varseqdens.tree4 <- varseqdens.tree4/max(varseqdens.tree4) 
+
+jpeg(file='untimedtree_bandwidth_variance.jpeg',
+	width=4,height=4,units='in',res=400)
+plot(logtaus,varseqdens.tree1,col='red',type='l',
+	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
+	main='Untimed Trees',lty=1)
+lines(logtaus,varseqdens.tree2,col='darkgreen',lty=2)
+lines(logtaus,varseqdens.tree3,col='blue',lty=3)
+lines(logtaus,varseqdens.tree4,col='purple',lty=4)
+lines(logtaus,varseqdens.tree,col='black',lty=5)
+legend('topright',legend=c(1,2,3,4,'All'),col=c('red','darkgreen','blue','purple','black'),
+	title='Lineage',lty=c(1,2,3,4,5))
+dev.off()
+
+varseqdens.timetree1 <- sapply(exp(logtaus), function(x) var(getseqden(timetree1,x)))
+varseqdens.timetree2 <- sapply(exp(logtaus), function(x) var(getseqden(timetree2,x)))
+varseqdens.timetree3 <- sapply(exp(logtaus), function(x) var(getseqden(timetree3,x)))
+varseqdens.timetree4 <- sapply(exp(logtaus), function(x) var(getseqden(timetree4,x)))
+
+#rescale these for plotting
+varseqdens.timetree1 <- varseqdens.timetree1/max(varseqdens.timetree1) 
+varseqdens.timetree2 <- varseqdens.timetree2/max(varseqdens.timetree2) 
+varseqdens.timetree3 <- varseqdens.timetree3/max(varseqdens.timetree3) 
+varseqdens.timetree4 <- varseqdens.timetree4/max(varseqdens.timetree4) 
+
+jpeg(file='timedtree_bandwidth_variance.jpeg',height=4,width=4,
+	units='in',res=400)
+plot(logtaus,varseqdens.timetree1,col='red',type='l',
+	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
+	main='Timed Trees',lty=1)
+lines(logtaus,varseqdens.timetree2,col='darkgreen',lty=2)
+lines(logtaus,varseqdens.timetree3,col='blue',lty=3)
+lines(logtaus,varseqdens.timetree4,col='purple',lty=4)
+legend('topright',legend=c(1,2,3,4),col=c('red','darkgreen','blue','purple'),
+	title='Lineage',lty=c(1,2,3,4))
+dev.off()
+
+
+
+# find the optimal bandwidths
+treeoptbw <- optimize(function(x){var(getseqden(tree,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+tree1optbw <- optimize(function(x){var(getseqden(tree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+tree2optbw <- optimize(function(x){var(getseqden(tree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+tree3optbw <- optimize(function(x){var(getseqden(tree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+tree4optbw <- optimize(function(x){var(getseqden(tree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+
+timetree1optbw <- optimize(function(x){var(getseqden(timetree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+timetree2optbw <- optimize(function(x){var(getseqden(timetree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+timetree3optbw <- optimize(function(x){var(getseqden(timetree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+timetree4optbw <- optimize(function(x){var(getseqden(timetree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+
+untimed_bws <- c(tree1optbw$maximum,tree2optbw$maximum,tree3optbw$maximum,tree4optbw$maximum,treeoptbw$maximum)
+untimed_bws <- exp(untimed_bws)
+
+timed_bws <- c(timetree1optbw$maximum,timetree2optbw$maximum,timetree3optbw$maximum,timetree4optbw$maximum)
+timed_bws <- exp(timed_bws)
 
 # set bandwidth parameters
-tau.tree <- 0.0625 * mean(dist.tree[upper.tri(dist.tree,diag=F)])
+tau.tree1 <- untimed_bws[1] * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
+tau.tree2 <- untimed_bws[2] * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
+tau.tree3 <- untimed_bws[3] * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
+tau.tree4 <- untimed_bws[4] * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
+tau.tree <- untimed_bws[5] * mean(dist.tree[upper.tri(dist.tree,diag=F)])
 
-tau.tree1 <- 0.0625 * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
-tau.tree2 <- 0.0625 * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
-tau.tree3 <- 0.0625 * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
-tau.tree4 <- 0.0625 * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
+tau.timetree1 <- untimed_bws[1] * mean(dist.timetree1[upper.tri(dist.timetree1,diag=F)])
+tau.timetree2 <- untimed_bws[2] * mean(dist.timetree2[upper.tri(dist.timetree2,diag=F)])
+tau.timetree3 <- untimed_bws[3] * mean(dist.timetree3[upper.tri(dist.timetree3,diag=F)])
+tau.timetree4 <- untimed_bws[4] * mean(dist.timetree4[upper.tri(dist.timetree4,diag=F)])
 
-tau.timetree1 <- 0.0625 * mean(dist.timetree1[upper.tri(dist.timetree1,diag=F)])
-tau.timetree2 <- 0.0625 * mean(dist.timetree2[upper.tri(dist.timetree2,diag=F)])
-tau.timetree3 <- 0.0625 * mean(dist.timetree3[upper.tri(dist.timetree3,diag=F)])
-tau.timetree4 <- 0.0625 * mean(dist.timetree4[upper.tri(dist.timetree4,diag=F)])
+# these bandwidths are much too large; the bandwidth giving the most variance in lineage 4 is an averge
+# separation of 1000 years
+tau.timetree1 <- 5
+tau.timetree2 <- 5
+tau.timetree3 <- 5
+tau.timetree4 <- 5
 
 # calculate the genome densities using exp(-d/tau)
 seqden.tree <- apply(dist.tree, 1, function(x) sum(exp(-x/tau.tree)) )
@@ -75,23 +158,10 @@ seqden.tree2 <- apply(dist.tree2, 1, function(x) sum(exp(-x/tau.tree2)) )
 seqden.tree3 <- apply(dist.tree3, 1, function(x) sum(exp(-x/tau.tree3)) )
 seqden.tree4 <- apply(dist.tree4, 1, function(x) sum(exp(-x/tau.tree4)) )
 
-#par(mfrow=c(2,2))
-#plot(seqden.tree1)
-#plot(seqden.tree2)
-#plot(seqden.tree3)
-#plot(seqden.tree4)
-
-
 seqden.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/tau.timetree1)) )
 seqden.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/tau.timetree2)) )
 seqden.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/tau.timetree3)) )
 seqden.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/tau.timetree4)) )
-
-#par(mfrow=c(2,2))
-#plot(seqden.timetree1)
-#plot(seqden.timetree2)
-#plot(seqden.timetree3)
-#plot(seqden.timetree4)
 
 #need to assign labels to the internal nodes of the trees:
 tree$node.label <- paste0('node',1:tree$Nnode)
@@ -286,7 +356,7 @@ dat <- merge(dat, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name')
 dat1 <- merge(dat1, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
 dat2 <- merge(dat2, df.tree2[,c('Sequence_name','seqden')], by='Sequence_name') 
 dat3 <- merge(dat3, df.tree3[,c('Sequence_name','seqden')], by='Sequence_name') 
-dat4 <- merge(dat4, df.tree4[,c('Sequence_name','seqden')], by='Sequence_name') 
+dat4 <- merge(dat4, df.timetree4[,c('Sequence_name','seqden')], by='Sequence_name') 
 
 
 # create some convenient names for groups of variables
@@ -432,11 +502,11 @@ summary(lm(log(seqden)~as.factor(outcome),dat4))
 # no signal from tbsymptomsidentified (but this had 115 NAs):
 summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat4))
 
-# no signal from x04fac_code:
+# GateWay from x04fac_code is where the most immediately related sequences comes from (using 5yr bandwidth)
 summary(lm(log(seqden)~as.factor(x04fac_code),dat4))
 
 # strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
-#	are Sensitive:
+#	are Sensitive (only at larger bw's, however):
 summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler),dat4))
 # However: of 701 rows, 667 sensitivee, 30 resistant, 4 are MDR
 table(dat4$Drug.resistance.Tbprofiler)
@@ -445,7 +515,7 @@ table(dat4$Drug.resistance.Tbprofiler)
 summary(lm(log(seqden)~as.factor(anyop),dat4))
 
 
-# no signal from tbcategory:
+# relapse in tbcategory seems positively associated with seqden at 5-yr bw:
 summary(lm(log(seqden)~as.factor(tbcategory),dat4))
 
 # no signal from tbclass
@@ -475,7 +545,7 @@ summary(lm(log(seqden)~as.factor(outcome),dat1))
 # no signal from tbsymptomsidentified (but this had 115 NAs):
 summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat1))
 
-# no signal from x04fac_code:
+#  signals x04fac_code at 5-yr bw: BT Adventist has low density, Chilomoni, Queen Elizabeth, Zingwangwa have higher density 
 summary(lm(log(seqden)~as.factor(x04fac_code),dat1))
 
 # strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
