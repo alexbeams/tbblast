@@ -61,94 +61,100 @@ getseqden <- function(tree,tau){
 	return( seqden)
 }
 
-logtaus <- seq(-3,3,length=60)
-varseqdens.tree <- sapply(exp(logtaus), function(x) var(getseqden(tree,x)))
-varseqdens.tree1 <- sapply(exp(logtaus), function(x) var(getseqden(tree1,x)))
-varseqdens.tree2 <- sapply(exp(logtaus), function(x) var(getseqden(tree2,x)))
-varseqdens.tree3 <- sapply(exp(logtaus), function(x) var(getseqden(tree3,x)))
-varseqdens.tree4 <- sapply(exp(logtaus), function(x) var(getseqden(tree4,x)))
-
-#rescale these for plotting
-varseqdens.tree <- varseqdens.tree/max(varseqdens.tree) 
-varseqdens.tree1 <- varseqdens.tree1/max(varseqdens.tree1) 
-varseqdens.tree2 <- varseqdens.tree2/max(varseqdens.tree2) 
-varseqdens.tree3 <- varseqdens.tree3/max(varseqdens.tree3) 
-varseqdens.tree4 <- varseqdens.tree4/max(varseqdens.tree4) 
-
-jpeg(file='untimedtree_bandwidth_variance.jpeg',
-	width=4,height=4,units='in',res=400)
-plot(logtaus,varseqdens.tree1,col='red',type='l',
-	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
-	main='Untimed Trees',lty=1)
-lines(logtaus,varseqdens.tree2,col='darkgreen',lty=2)
-lines(logtaus,varseqdens.tree3,col='blue',lty=3)
-lines(logtaus,varseqdens.tree4,col='purple',lty=4)
-lines(logtaus,varseqdens.tree,col='black',lty=5)
-legend('topright',legend=c(1,2,3,4,'All'),col=c('red','darkgreen','blue','purple','black'),
-	title='Lineage',lty=c(1,2,3,4,5))
-dev.off()
-
-varseqdens.timetree1 <- sapply(exp(logtaus), function(x) var(getseqden(timetree1,x)))
-varseqdens.timetree2 <- sapply(exp(logtaus), function(x) var(getseqden(timetree2,x)))
-varseqdens.timetree3 <- sapply(exp(logtaus), function(x) var(getseqden(timetree3,x)))
-varseqdens.timetree4 <- sapply(exp(logtaus), function(x) var(getseqden(timetree4,x)))
-
-#rescale these for plotting
-varseqdens.timetree1 <- varseqdens.timetree1/max(varseqdens.timetree1) 
-varseqdens.timetree2 <- varseqdens.timetree2/max(varseqdens.timetree2) 
-varseqdens.timetree3 <- varseqdens.timetree3/max(varseqdens.timetree3) 
-varseqdens.timetree4 <- varseqdens.timetree4/max(varseqdens.timetree4) 
-
-jpeg(file='timedtree_bandwidth_variance.jpeg',height=4,width=4,
-	units='in',res=400)
-plot(logtaus,varseqdens.timetree1,col='red',type='l',
-	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
-	main='Timed Trees',lty=1)
-lines(logtaus,varseqdens.timetree2,col='darkgreen',lty=2)
-lines(logtaus,varseqdens.timetree3,col='blue',lty=3)
-lines(logtaus,varseqdens.timetree4,col='purple',lty=4)
-legend('topright',legend=c(1,2,3,4),col=c('red','darkgreen','blue','purple'),
-	title='Lineage',lty=c(1,2,3,4))
-dev.off()
-
-
-
-# find the optimal bandwidths
-treeoptbw <- optimize(function(x){var(getseqden(tree,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-tree1optbw <- optimize(function(x){var(getseqden(tree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-tree2optbw <- optimize(function(x){var(getseqden(tree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-tree3optbw <- optimize(function(x){var(getseqden(tree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-tree4optbw <- optimize(function(x){var(getseqden(tree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-
-timetree1optbw <- optimize(function(x){var(getseqden(timetree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-timetree2optbw <- optimize(function(x){var(getseqden(timetree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-timetree3optbw <- optimize(function(x){var(getseqden(timetree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-timetree4optbw <- optimize(function(x){var(getseqden(timetree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-
-untimed_bws <- c(tree1optbw$maximum,tree2optbw$maximum,tree3optbw$maximum,tree4optbw$maximum,treeoptbw$maximum)
-untimed_bws <- exp(untimed_bws)
-
-timed_bws <- c(timetree1optbw$maximum,timetree2optbw$maximum,timetree3optbw$maximum,timetree4optbw$maximum)
-timed_bws <- exp(timed_bws)
-
-# set bandwidth parameters
-tau.tree1 <- untimed_bws[1] * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
-tau.tree2 <- untimed_bws[2] * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
-tau.tree3 <- untimed_bws[3] * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
-tau.tree4 <- untimed_bws[4] * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
-tau.tree <- untimed_bws[5] * mean(dist.tree[upper.tri(dist.tree,diag=F)])
-
-tau.timetree1 <- untimed_bws[1] * mean(dist.timetree1[upper.tri(dist.timetree1,diag=F)])
-tau.timetree2 <- untimed_bws[2] * mean(dist.timetree2[upper.tri(dist.timetree2,diag=F)])
-tau.timetree3 <- untimed_bws[3] * mean(dist.timetree3[upper.tri(dist.timetree3,diag=F)])
-tau.timetree4 <- untimed_bws[4] * mean(dist.timetree4[upper.tri(dist.timetree4,diag=F)])
-
+#logtaus <- seq(-3,3,length=60)
+#varseqdens.tree <- sapply(exp(logtaus), function(x) var(getseqden(tree,x)))
+#varseqdens.tree1 <- sapply(exp(logtaus), function(x) var(getseqden(tree1,x)))
+#varseqdens.tree2 <- sapply(exp(logtaus), function(x) var(getseqden(tree2,x)))
+#varseqdens.tree3 <- sapply(exp(logtaus), function(x) var(getseqden(tree3,x)))
+#varseqdens.tree4 <- sapply(exp(logtaus), function(x) var(getseqden(tree4,x)))
+#
+##rescale these for plotting
+#varseqdens.tree <- varseqdens.tree/max(varseqdens.tree) 
+#varseqdens.tree1 <- varseqdens.tree1/max(varseqdens.tree1) 
+#varseqdens.tree2 <- varseqdens.tree2/max(varseqdens.tree2) 
+#varseqdens.tree3 <- varseqdens.tree3/max(varseqdens.tree3) 
+#varseqdens.tree4 <- varseqdens.tree4/max(varseqdens.tree4) 
+#
+#jpeg(file='untimedtree_bandwidth_variance.jpeg',
+#	width=4,height=4,units='in',res=400)
+#plot(logtaus,varseqdens.tree1,col='red',type='l',
+#	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
+#	main='Untimed Trees',lty=1)
+#lines(logtaus,varseqdens.tree2,col='darkgreen',lty=2)
+#lines(logtaus,varseqdens.tree3,col='blue',lty=3)
+#lines(logtaus,varseqdens.tree4,col='purple',lty=4)
+#lines(logtaus,varseqdens.tree,col='black',lty=5)
+#legend('topright',legend=c(1,2,3,4,'All'),col=c('red','darkgreen','blue','purple','black'),
+#	title='Lineage',lty=c(1,2,3,4,5))
+#dev.off()
+#
+#varseqdens.timetree1 <- sapply(exp(logtaus), function(x) var(getseqden(timetree1,x)))
+#varseqdens.timetree2 <- sapply(exp(logtaus), function(x) var(getseqden(timetree2,x)))
+#varseqdens.timetree3 <- sapply(exp(logtaus), function(x) var(getseqden(timetree3,x)))
+#varseqdens.timetree4 <- sapply(exp(logtaus), function(x) var(getseqden(timetree4,x)))
+#
+##rescale these for plotting
+#varseqdens.timetree1 <- varseqdens.timetree1/max(varseqdens.timetree1) 
+#varseqdens.timetree2 <- varseqdens.timetree2/max(varseqdens.timetree2) 
+#varseqdens.timetree3 <- varseqdens.timetree3/max(varseqdens.timetree3) 
+#varseqdens.timetree4 <- varseqdens.timetree4/max(varseqdens.timetree4) 
+#
+#jpeg(file='timedtree_bandwidth_variance.jpeg',height=4,width=4,
+#	units='in',res=400)
+#plot(logtaus,varseqdens.timetree1,col='red',type='l',
+#	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
+#	main='Timed Trees',lty=1)
+#lines(logtaus,varseqdens.timetree2,col='darkgreen',lty=2)
+#lines(logtaus,varseqdens.timetree3,col='blue',lty=3)
+#lines(logtaus,varseqdens.timetree4,col='purple',lty=4)
+#legend('topright',legend=c(1,2,3,4),col=c('red','darkgreen','blue','purple'),
+#	title='Lineage',lty=c(1,2,3,4))
+#dev.off()
+#
+#
+#
+## find the optimal bandwidths
+#treeoptbw <- optimize(function(x){var(getseqden(tree,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#tree1optbw <- optimize(function(x){var(getseqden(tree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#tree2optbw <- optimize(function(x){var(getseqden(tree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#tree3optbw <- optimize(function(x){var(getseqden(tree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#tree4optbw <- optimize(function(x){var(getseqden(tree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#
+#timetree1optbw <- optimize(function(x){var(getseqden(timetree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#timetree2optbw <- optimize(function(x){var(getseqden(timetree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#timetree3optbw <- optimize(function(x){var(getseqden(timetree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#timetree4optbw <- optimize(function(x){var(getseqden(timetree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
+#
+#untimed_bws <- c(tree1optbw$maximum,tree2optbw$maximum,tree3optbw$maximum,tree4optbw$maximum,treeoptbw$maximum)
+#untimed_bws <- exp(untimed_bws)
+#
+#timed_bws <- c(timetree1optbw$maximum,timetree2optbw$maximum,timetree3optbw$maximum,timetree4optbw$maximum)
+#timed_bws <- exp(timed_bws)
+#
+## set bandwidth parameters
+#tau.tree1 <- untimed_bws[1] * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
+#tau.tree2 <- untimed_bws[2] * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
+#tau.tree3 <- untimed_bws[3] * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
+#tau.tree4 <- untimed_bws[4] * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
+#tau.tree <- untimed_bws[5] * mean(dist.tree[upper.tri(dist.tree,diag=F)])
+#
+#tau.timetree1 <- untimed_bws[1] * mean(dist.timetree1[upper.tri(dist.timetree1,diag=F)])
+#tau.timetree2 <- untimed_bws[2] * mean(dist.timetree2[upper.tri(dist.timetree2,diag=F)])
+#tau.timetree3 <- untimed_bws[3] * mean(dist.timetree3[upper.tri(dist.timetree3,diag=F)])
+#tau.timetree4 <- untimed_bws[4] * mean(dist.timetree4[upper.tri(dist.timetree4,diag=F)])
+#
 # these bandwidths are much too large; the bandwidth giving the most variance in lineage 4 is an averge
 # separation of 1000 years
-tau.timetree1 <- 5
-tau.timetree2 <- 5
-tau.timetree3 <- 5
-tau.timetree4 <- 5
+tau.timetree1 <- 2
+tau.timetree2 <- 2
+tau.timetree3 <- 2
+tau.timetree4 <- 2
+
+tau.tree1 <- 0.0625 * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
+tau.tree2 <- 0.0625 * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
+tau.tree3 <- 0.0625 * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
+tau.tree4 <- 0.0625 * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
+tau.tree <- 0.0625 * mean(dist.tree[upper.tri(dist.tree,diag=F)])
 
 # calculate the genome densities using exp(-d/tau)
 seqden.tree <- apply(dist.tree, 1, function(x) sum(exp(-x/tau.tree)) )
@@ -228,6 +234,52 @@ df.timetree2$mean <- apply(dist.timetree2, 1, mean)
 df.timetree3$mean <- apply(dist.timetree3, 1, mean)
 df.timetree4$mean <- apply(dist.timetree4, 1, mean)
 
+# load in the metadata and the lineage/drug resistance data
+drugdat <- read.csv('Malawi_final_stats.csv')
+blastdat <- read.csv('BLAST_ePAL_SeqID_NoGPS.csv')
+names(drugdat)[1] <- 'Sequence_name'
+
+# merge them by sequence name
+dat <- merge(blastdat, drugdat, by='Sequence_name')
+
+# subset the data by lineage to generate sequence densities separetely by linage
+
+dat1 <- dat[dat$Major.Lineage=='lineage1',]
+dat2 <- dat[dat$Major.Lineage=='lineage2',]
+dat3 <- dat[dat$Major.Lineage=='lineage3',]
+dat4 <- dat[dat$Major.Lineage=='lineage4',]
+
+# merge the sequence density values
+datm <- merge(dat, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
+
+dat1m <- merge(dat1, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+dat2m <- merge(dat2, df.tree2[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+dat3m <- merge(dat3, df.tree3[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+dat4m <- merge(dat4, df.timetree4[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+
+
+# merge all of the other data onto the tree dataframes
+df.tree1m <- merge(df.tree1, dat1, by='Sequence_name',all=T)
+df.tree2m <- merge(df.tree2, dat2, by='Sequence_name',all=T)
+df.tree3m <- merge(df.tree3, dat3, by='Sequence_name',all=T)
+df.tree4m <- merge(df.tree4, dat4, by='Sequence_name',all=T)
+
+df.timetree1m <- merge(df.timetree1, dat1, by='Sequence_name',all=T)
+df.timetree2m <- merge(df.timetree2, dat2, by='Sequence_name',all=T)
+df.timetree3m <- merge(df.timetree3, dat3, by='Sequence_name',all=T)
+df.timetree4m <- merge(df.timetree4, dat4, by='Sequence_name',all=T)
+
+
+
+
+
+##########################
+##### plot the trees #####
+##########################
+
+
+
+
 # plotting parameters
 treelayout <- 'circular' 
 dotsize <- 1
@@ -245,17 +297,21 @@ p.timetree3 <- ggtree(timetree3, layout = treelayout)
 p.timetree4 <- ggtree(timetree4, layout = treelayout)
 
 # Add the data frames to the plots
-p.tree <- p.tree %<+% df.tree
+#p.tree <- p.tree %<+% df.treem
 
-p.tree1 <- p.tree1 %<+% df.tree1
-p.tree2 <- p.tree2 %<+% df.tree2
-p.tree3 <- p.tree3 %<+% df.tree3
-p.tree4 <- p.tree4 %<+% df.tree4
+p.tree1 <- p.tree1 %<+% df.tree1m
+p.tree2 <- p.tree2 %<+% df.tree2m
+p.tree3 <- p.tree3 %<+% df.tree3m
+p.tree4 <- p.tree4 %<+% df.tree4m
 
-p.timetree1 <- p.timetree1 %<+% df.timetree1
-p.timetree2 <- p.timetree2 %<+% df.timetree2
-p.timetree3 <- p.timetree3 %<+% df.timetree3
-p.timetree4 <- p.timetree4 %<+% df.timetree4
+p.timetree1 <- p.timetree1 %<+% df.timetree1m
+p.timetree2 <- p.timetree2 %<+% df.timetree2m
+p.timetree3 <- p.timetree3 %<+% df.timetree3m
+p.timetree4 <- p.timetree4 %<+% df.timetree4m
+
+
+p.tree1 + geom_tippoint(aes(color=hivstatus))
+p.tree4 + geom_tippoint(aes(color=hivstatus))
 
 p.seqden.tree <- p.tree + geom_tippoint(aes(color=seqden),size=dotsize) +
 	geom_nodepoint(aes(color=seqden),size=dotsize) +
@@ -472,11 +528,6 @@ sum(is.na(dat$tbsymptomsidentified))
 # sort of perplexing that this would be totally unrelated to the type of symptoms
 #	reported
 
-# create dataframes for each lineage
-dat1 <- dat[dat$Major.Lineage=='lineage1',]
-dat2 <- dat[dat$Major.Lineage=='lineage2',]
-dat3 <- dat[dat$Major.Lineage=='lineage3',]
-dat4 <- dat[dat$Major.Lineage=='lineage4',]
 
 mod <- lm(log(seqden)~as.factor(sex) + age + as.factor(hivstatus) +
 	as.factor(anyhivclinic) + as.factor(outcome) + as.factor(tbsymptomsidentified) + 
@@ -535,6 +586,17 @@ summary(lm(log(seqden)~age,dat1))
 
 # no signal from hivstatus:
 summary(lm(log(seqden)~as.factor(hivstatus),dat1))
+
+# lineage 4 has a significantly smaller share of HIV:
+summary(glm(as.factor(hivstatus)~as.factor(Major.Lineage),family=binomial(link='logit'),data=dat))
+
+# there does appear to a signal with hivstatus over all lineages:
+summary(lm(log(seqden)~as.factor(hivstatus),dat))
+
+# removing just lineage 4 doesn't reveal a relationshp with hivstatus:
+summary(lm(log(seqden)~as.factor(hivstatus),subset(dat, Major.Lineage %in% c('lineage1','lineage2','lineage3') ) ))
+
+
 
 # no signal from anyhivclinic:
 summary(lm(log(seqden)~as.factor(anyhivclinic),dat1))
