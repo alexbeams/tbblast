@@ -145,11 +145,13 @@ getseqden <- function(tree,tau){
 #
 # these bandwidths are much too large; the bandwidth giving the most variance in lineage 4 is an averge
 # separation of 1000 years
-tau.timetree1 <- 2
-tau.timetree2 <- 2
-tau.timetree3 <- 2
-tau.timetree4 <- 2
+tau.timetree1 <- 5
+tau.timetree2 <- 5
+tau.timetree3 <- 5
+tau.timetree4 <- 5
 
+# no idea what the bandwidths for untimed trees should be; probably don't even want to use
+# the untimed trees
 tau.tree1 <- 0.0625 * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
 tau.tree2 <- 0.0625 * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
 tau.tree3 <- 0.0625 * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
@@ -242,6 +244,109 @@ names(drugdat)[1] <- 'Sequence_name'
 # merge them by sequence name
 dat <- merge(blastdat, drugdat, by='Sequence_name')
 
+# create some convenient names for groups of variables
+
+# redundant columns, unhelpful columns, 
+# 	or columns with too many NA's, or minimal variation...
+discardnms <- c('x01area','hittbclass','labid_duplicates','labid_january',
+	'Number_paired_reads','Perc_mapped_H37Rv','Mean_Coverage',
+	'OriginalRun','date','pid','tgenid','labid_links','Drug','Multi.drug')
+
+#questions from the x01 form - filled out when clinicians register patients for the 
+#	TB database
+xnms <- names(dat)[5:32]
+
+# healthcare-seeking behavior:
+qechnms <- names(dat)[77:104]
+
+# history of working in healthcare settings:
+hsworknms <- names(dat)[105:113]
+# only 4 people answered 'Yes'; the majority answered 'No', but lots of NAs.
+
+# visited an outpatient clinic?
+opnms <- names(dat)[116:127]
+
+# visited an hiv clinic?
+hivclinnms <- names(dat)[128:139]
+
+# symptoms
+symnms <- names(dat)[45:51]
+
+# proxy means test for poverty:
+povnms <- c('peopleinhh','sleepinsameroom','cookinglocation','smoke',
+	'knowanyonewithtb','relationshipwithtb','haselectricity','fridge',
+	'carmotobike','bed','radio','phone','levelschool','sleepwithtb',
+	'blantyreresident')
+
+# characteristics of the TB diagnosis
+tbdxnms <- c('l28smear','l29xpert','l30cultures','l32id','smeartest','smearstatus',
+	'tbclass','tbategory','genexpertresult','tbsymptomsidentified','tbcategory',
+	'culture_positive')
+
+# hiv-related characteristics
+hivnms <- c('ipt','hivstatus','arvtreatment','arvduration','wereyoutakingipt')
+
+# antibiotic information
+abxnms <- c('trimoxazole','rifresult')
+
+# demographic variables
+demnms <- c('sex','age','agegroup','ageest')
+
+# abx resistance info - second two appear redundant
+resnms <- c('Drug.resistance.Tbprofiler')
+
+# not sure what this one is - it's different from 'outcome'
+huhnms <- c('outcome_success')
+
+# the remaining columns are the sequence name, the ward ID, the outcome of treatment,
+#	datecreated (differs from x05regdate) and Major.Lineage:
+setdiff(names(dat), c(discardnms,xnms,qechnms,hsworknms,opnms,hivclinnms,symnms,
+	povnms,tbdxnms,hivnms,abxnms,demnms,resnms,huhnms))
+
+
+# include an indicator for whether the person visited anyhivclinic, or anyop:
+dat$anyhivclinic <- as.numeric(apply(dat[,hivclinnms], 1, function(x) 'Yes' %in% x))
+dat$anyop <- as.numeric(apply(dat[,opnms],1,function(x) 'Yes' %in% x))
+
+#how many NAs?
+sum(is.na(dat$Major.Lineage))
+sum(is.na(dat$sex))
+sum(is.na(dat$age))
+sum(is.na(dat$hivstatus))
+sum(is.na(dat$anyhivclinic))
+sum(is.na(dat$outcome))
+sum(is.na(dat$tbsymptomsidentified))
+sum(is.na(dat$x04fac_code))
+
+# 115 NAs in tbsymptomsidentified, 10 NAs in outcome, 
+#	16 NAs in hivstatus - not too bad. 
+# Do any of these variables need to be combined into a single factor?
+
+# hivstatus and anyhivclinic are not exactly the same variable:
+table(dat$hivstatus, dat$anyhivclinic)
+
+# arvtreatment only has data points if hivstatus='Positive':
+table(dat$hivstatus, dat$arvtreatment)
+
+# coughduration obviously reported only if sympcough='Yes':
+table(dat$sympcough,dat$coughduration)
+
+# is tbsymptomsidentified a level of the responses in symnms?
+dat$anysymptom <- apply(dat[,symnms],1,function(x) 'Yes' %in% x)
+#	no - only 1 person in the entire dataset does not have a symptom
+
+#how many of the symptoms listed in symnms (excluding coughduration) do people
+#	in the data have?
+dat$numsymptoms <- apply(dat[,symnms[1:6]],1,function(x) sum(x=='Yes'))
+hist(dat$numsymptoms)
+# 4 symptoms is the most common 
+
+# 115 individuals NA for tbsymptomsidenified:
+sum(is.na(dat$tbsymptomsidentified))
+# sort of perplexing that this would be totally unrelated to the type of symptoms
+#	reported
+
+
 # subset the data by lineage to generate sequence densities separetely by linage
 
 dat1 <- dat[dat$Major.Lineage=='lineage1',]
@@ -249,12 +354,12 @@ dat2 <- dat[dat$Major.Lineage=='lineage2',]
 dat3 <- dat[dat$Major.Lineage=='lineage3',]
 dat4 <- dat[dat$Major.Lineage=='lineage4',]
 
-# merge the sequence density values
-datm <- merge(dat, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
+# merge the sequence density values - these now have a row for each internal node, all with NA except
+# for the seqden values
 
-dat1m <- merge(dat1, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
-dat2m <- merge(dat2, df.tree2[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
-dat3m <- merge(dat3, df.tree3[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+dat1m <- merge(dat1, df.timetree1[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+dat2m <- merge(dat2, df.timetree2[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+dat3m <- merge(dat3, df.timetree3[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
 dat4m <- merge(dat4, df.timetree4[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
 
 
@@ -269,16 +374,20 @@ df.timetree2m <- merge(df.timetree2, dat2, by='Sequence_name',all=T)
 df.timetree3m <- merge(df.timetree3, dat3, by='Sequence_name',all=T)
 df.timetree4m <- merge(df.timetree4, dat4, by='Sequence_name',all=T)
 
+# now reproduce dat with all lineages in it to do regressions later, and might as well
+# leave out all of the rows for internal nodes because those don't have any information
+dat1 <- dat1m[dat1m$Sequence_name %in% dat$Sequence_name,] 
+dat2 <- dat2m[dat2m$Sequence_name %in% dat$Sequence_name,] 
+dat3 <- dat3m[dat3m$Sequence_name %in% dat$Sequence_name,] 
+dat4 <- dat4m[dat4m$Sequence_name %in% dat$Sequence_name,] 
 
-
+datold = dat
+dat = rbind(dat1,dat2,dat3,dat4)
 
 
 ##########################
 ##### plot the trees #####
 ##########################
-
-
-
 
 # plotting parameters
 treelayout <- 'circular' 
@@ -391,142 +500,13 @@ p.mean.timetree4 <- p.timetree4 + geom_tippoint(aes(color=mean),size=dotsize) +
 	theme_tree2() +
 	ggtitle('Mean patristic distance: timetree 4')
 
-# load in the metadata and the lineage/drug resistance data
-drugdat <- read.csv('Malawi_final_stats.csv')
-blastdat <- read.csv('BLAST_ePAL_SeqID_NoGPS.csv')
-names(drugdat)[1] <- 'Sequence_name'
+###############
+# Regressions #
+###############
 
-# merge them by sequence name
-dat <- merge(blastdat, drugdat, by='Sequence_name')
-
-# subset the data by lineage to generate sequence densities separetely by linage
-
-dat1 <- dat[dat$Major.Lineage=='lineage1',]
-dat2 <- dat[dat$Major.Lineage=='lineage2',]
-dat3 <- dat[dat$Major.Lineage=='lineage3',]
-dat4 <- dat[dat$Major.Lineage=='lineage4',]
-
-# append the sequence density values
-dat <- merge(dat, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
-
-dat1 <- merge(dat1, df.tree1[,c('Sequence_name','seqden')], by='Sequence_name') 
-dat2 <- merge(dat2, df.tree2[,c('Sequence_name','seqden')], by='Sequence_name') 
-dat3 <- merge(dat3, df.tree3[,c('Sequence_name','seqden')], by='Sequence_name') 
-dat4 <- merge(dat4, df.timetree4[,c('Sequence_name','seqden')], by='Sequence_name') 
-
-
-# create some convenient names for groups of variables
-
-# redundant columns, unhelpful columns, 
-# 	or columns with too many NA's, or minimal variation...
-discardnms <- c('x01area','hittbclass','labid_duplicates','labid_january',
-	'Number_paired_reads','Perc_mapped_H37Rv','Mean_Coverage',
-	'OriginalRun','date','pid','tgenid','labid_links','Drug','Multi.drug')
-
-#questions from the x01 form - filled out when clinicians register patients for the 
-#	TB database
-xnms <- names(dat)[5:32]
-
-# healthcare-seeking behavior:
-qechnms <- names(dat)[77:104]
-
-# history of working in healthcare settings:
-hsworknms <- names(dat)[105:113]
-# only 4 people answered 'Yes'; the majority answered 'No', but lots of NAs.
-
-# visited an outpatient clinic?
-opnms <- names(dat)[116:127]
-
-# visited an hiv clinic?
-hivclinnms <- names(dat)[128:139]
-
-# symptoms
-symnms <- names(dat)[45:51]
-
-# proxy means test for poverty:
-povnms <- c('peopleinhh','sleepinsameroom','cookinglocation','smoke',
-	'knowanyonewithtb','relationshipwithtb','haselectricity','fridge',
-	'carmotobike','bed','radio','phone','levelschool','sleepwithtb',
-	'blantyreresident')
-
-# characteristics of the TB diagnosis
-tbdxnms <- c('l28smear','l29xpert','l30cultures','l32id','smeartest','smearstatus',
-	'tbclass','tbategory','genexpertresult','tbsymptomsidentified','tbcategory',
-	'culture_positive')
-
-# hiv-related characteristics
-hivnms <- c('ipt','hivstatus','arvtreatment','arvduration','wereyoutakingipt')
-
-# antibiotic information
-abxnms <- c('trimoxazole','rifresult')
-
-# demographic variables
-demnms <- c('sex','age','agegroup','ageest')
-
-# abx resistance info - second two appear redundant
-resnms <- c('Drug.resistance.Tbprofiler')
-
-# not sure what this one is - it's different from 'outcome'
-huhnms <- c('outcome_success')
-
-# the remaining columns are the sequence name, the ward ID, the outcome of treatment,
-#	datecreated (differs from x05regdate) and Major.Lineage:
-setdiff(names(dat), c(discardnms,xnms,qechnms,hsworknms,opnms,hivclinnms,symnms,
-	povnms,tbdxnms,hivnms,abxnms,demnms,resnms,huhnms))
-
-dat <- rbind(dat1,dat2,dat3,dat4)
-
-# include an indicator for whether the person visited anyhivclinic, or anyop:
-dat$anyhivclinic <- as.numeric(apply(dat[,hivclinnms], 1, function(x) 'Yes' %in% x))
-dat$anyop <- as.numeric(apply(dat[,opnms],1,function(x) 'Yes' %in% x))
-
-
-# which variables do we think matter the most? to start, aggregate all of the hivclinic
-#	results into 'anyhivclinic'
 
 modnms <- c('sex','age','hivstatus','arvtreatment','ipt','anyhivclinic','outcome',
 	'tbsymptomsidentified','x04fac_code',symnms)
-
-# some of these variables need to be reorganized before going into a regression:
-
-# how many NAs are there for these?
-
-sum(is.na(dat$Major.Lineage))
-sum(is.na(dat$sex))
-sum(is.na(dat$age))
-sum(is.na(dat$hivstatus))
-sum(is.na(dat$anyhivclinic))
-sum(is.na(dat$outcome))
-sum(is.na(dat$tbsymptomsidentified))
-sum(is.na(dat$x04fac_code))
-
-# 115 NAs in tbsymptomsidentified, 10 NAs in outcome, 
-#	16 NAs in hivstatus - not too bad. 
-# Do any of these variables need to be combined into a single factor?
-
-# hivstatus and anyhivclinic are not exactly the same variable:
-table(dat$hivstatus, dat$anyhivclinic)
-
-# arvtreatment only has data points if hivstatus='Positive':
-table(dat$hivstatus, dat$arvtreatment)
-
-# coughduration obviously reported only if sympcough='Yes':
-table(dat$sympcough,dat$coughduration)
-
-# is tbsymptomsidentified a level of the responses in symnms?
-dat$anysymptom <- apply(dat[,symnms],1,function(x) 'Yes' %in% x)
-#	no - only 1 person in the entire dataset does not have a symptom
-
-#how many of the symptoms listed in symnms (excluding coughduration) do people
-#	in the data have?
-dat$numsymptoms <- apply(dat[,symnms[1:6]],1,function(x) sum(x=='Yes'))
-hist(dat$numsymptoms)
-# 4 symptoms is the most common 
-
-# 115 individuals NA for tbsymptomsidenified:
-sum(is.na(dat$tbsymptomsidentified))
-# sort of perplexing that this would be totally unrelated to the type of symptoms
-#	reported
 
 
 mod <- lm(log(seqden)~as.factor(sex) + age + as.factor(hivstatus) +
@@ -535,10 +515,10 @@ mod <- lm(log(seqden)~as.factor(sex) + age + as.factor(hivstatus) +
 
 # look at the variables in isolation for lineage 4:
 
-# sex and age might matter on their own:
+# sex and age might matter on their own at larger bandwidths, but not for small ones:
 summary(lm(log(seqden)~as.factor(sex),dat4))
 
-# this may be meaningless. The magnitude of the effect is pretty small
+# this may be meaningless. The magnitude of the effect is pretty small (again, only for a larger bandwidth)
 summary(lm(log(seqden)~age,dat4))
 
 # no signal from hivstatus:
@@ -553,7 +533,7 @@ summary(lm(log(seqden)~as.factor(outcome),dat4))
 # no signal from tbsymptomsidentified (but this had 115 NAs):
 summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat4))
 
-# GateWay from x04fac_code is where the most immediately related sequences comes from (using 5yr bandwidth)
+# GateWay from x04fac_code is where the most immediately related sequences comes from (using 2yr bandwidth)
 summary(lm(log(seqden)~as.factor(x04fac_code),dat4))
 
 # strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
@@ -566,8 +546,10 @@ table(dat4$Drug.resistance.Tbprofiler)
 summary(lm(log(seqden)~as.factor(anyop),dat4))
 
 
-# relapse in tbcategory seems positively associated with seqden at 5-yr bw:
+# relapse in tbcategory seems positively associated with seqden at 2-yr bw:
 summary(lm(log(seqden)~as.factor(tbcategory),dat4))
+summary(lm(log(seqden)~as.factor(tbcategory)+Major.Lineage,dat))
+# relationship is clearer including all lineages; the effect decreases a small amount
 
 # no signal from tbclass
 summary(lm(log(seqden)~as.factor(tbclass),dat4))
@@ -609,19 +591,31 @@ summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat1))
 
 #  signals x04fac_code at 5-yr bw: BT Adventist has low density, Chilomoni, Queen Elizabeth, Zingwangwa have higher density 
 summary(lm(log(seqden)~as.factor(x04fac_code),dat1))
+# at 2-yr bw, Chilomoni and GatWay have significantly higher density for lineage 2; for lineage 4, Chilomoni, Gateway,
+#	Ndirande, and Queen Elizabeth Central Hospital have significantly elevated density; no signal for lineages 1 or 3
+
+summary(lm(log(seqden)~as.factor(x04fac_code)+Major.Lineage,dat))
+# at 2-yr bw, Chilomoni, Gateway, Queen Elizabeth Central are almost signifigant (higher density)
 
 # strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
-#	are Sensitive:
+#	are Sensitive (but only for lineage 1):
 summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler),dat1))
 # However: of 99 rows, 91 sensitivee, 8 resistant, 0 are MDR
 table(dat1$Drug.resistance.Tbprofiler)
+
+summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler)+Major.Lineage,dat))
+# no clear signal here
 
 # no signal from anyop:
 summary(lm(log(seqden)~as.factor(anyop),dat1))
 
 
-# no signal from tbcategory:
+# weak signal from tbcategory (2-yr bw):
 summary(lm(log(seqden)~as.factor(tbcategory),dat1))
+
+summary(lm(log(seqden)~as.factor(tbcategory)+Major.Lineage,dat))
+# strongest signal from looking at the full data (lineages 1 and 4 show a positive relationship with seqden and relapse
+#	on their own)
 
 # no signal from tbclass
 summary(lm(log(seqden)~as.factor(tbclass),dat1))
@@ -662,6 +656,34 @@ plot(seqden~as.factor(trimoxazole),dat)
 
 plot(seqden~as.factor(rifresult),dat1)
 plot(seqden~as.factor(rifresult),dat4)
+
+
+summary(lm(log(seqden)~as.factor(tbcategory)+Major.Lineage+x04fac_code+age+sex+l28smear,dat))
+
+relapsemod <- lm(log(seqden)~tbcategory+Major.Lineage+x04fac_code+age+sex+l28smear+hivstatus+anyhivclinic+outcome+tbsymptomsidentified+sympsweat+sympfever+sympblood+sympcough+ipt+wereyoutakingipt,dat)
+
+dat$crud = dat$seqden
+dat$crud[dat$Major.Lineage=='lineage1'] <- dat$crud[dat$Major.Lineage=='lineage1']/mean(dat$crud[dat$Major.Lineage=='lineage1']) 
+dat$crud[dat$Major.Lineage=='lineage2'] <- dat$crud[dat$Major.Lineage=='lineage2']/mean(dat$crud[dat$Major.Lineage=='lineage2']) 
+dat$crud[dat$Major.Lineage=='lineage3'] <- dat$crud[dat$Major.Lineage=='lineage3']/mean(dat$crud[dat$Major.Lineage=='lineage3']) 
+dat$crud[dat$Major.Lineage=='lineage4'] <- dat$crud[dat$Major.Lineage=='lineage4']/mean(dat$crud[dat$Major.Lineage=='lineage4']) 
+
+
+relapsemod2 <- lm(log(crud)~tbcategory+Major.Lineage+x04fac_code+age+sex+l28smear+hivstatus+anyhivclinic+outcome+tbsymptomsidentified+sympsweat+sympfever+sympblood+sympcough+ipt+wereyoutakingipt,dat)
+
+
+par(mfrow=c(2,2))
+plot(relapsemod2)
+
+#par(mfrow=c(2,2))
+#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage1',],main='Lineage1')
+#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage2',],main='Lineage2')
+#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage3',],main='Lineage3')
+#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage4',],main='Lineage4')
+#
+#par(mfrow=c(2,1))
+#boxplot(log(seqden)~x04fac_code,dat[dat$tbcategory=='New',],main='tbcategory: New')
+#boxplot(log(seqden)~x04fac_code,dat[dat$tbcategory=='Relapse',],main='tbcategory: Relapse')
 
 
 
