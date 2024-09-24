@@ -860,3 +860,11 @@ anova(mod2,mod2a)
 # actually, it looks like they're less useful than the older economic data (fridge, carmotobike, bed, radio, phone)
 
 
+
+# let's see if anyhivclinic and anyop add anything:
+modhc <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop,dat,family=Gamma(link='identity'))
+AIC(modhc,mod)
+anova(modhc,mod)
+# doesn't look like it, but maybe the more detailed information says something interesting...
+
+
