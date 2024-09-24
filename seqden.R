@@ -662,28 +662,201 @@ summary(lm(log(seqden)~as.factor(tbcategory)+Major.Lineage+x04fac_code+age+sex+l
 
 relapsemod <- lm(log(seqden)~tbcategory+Major.Lineage+x04fac_code+age+sex+l28smear+hivstatus+anyhivclinic+outcome+tbsymptomsidentified+sympsweat+sympfever+sympblood+sympcough+ipt+wereyoutakingipt,dat)
 
-dat$crud = dat$seqden
-dat$crud[dat$Major.Lineage=='lineage1'] <- dat$crud[dat$Major.Lineage=='lineage1']/mean(dat$crud[dat$Major.Lineage=='lineage1']) 
-dat$crud[dat$Major.Lineage=='lineage2'] <- dat$crud[dat$Major.Lineage=='lineage2']/mean(dat$crud[dat$Major.Lineage=='lineage2']) 
-dat$crud[dat$Major.Lineage=='lineage3'] <- dat$crud[dat$Major.Lineage=='lineage3']/mean(dat$crud[dat$Major.Lineage=='lineage3']) 
-dat$crud[dat$Major.Lineage=='lineage4'] <- dat$crud[dat$Major.Lineage=='lineage4']/mean(dat$crud[dat$Major.Lineage=='lineage4']) 
+
+###################################
+#### GLMs for sequence desnity ####
+###################################
 
 
-relapsemod2 <- lm(log(crud)~tbcategory+Major.Lineage+x04fac_code+age+sex+l28smear+hivstatus+anyhivclinic+outcome+tbsymptomsidentified+sympsweat+sympfever+sympblood+sympcough+ipt+wereyoutakingipt,dat)
+# let's start with variables that don't have any missingness
+missingness <- apply(dat,2,function(x) sum(is.na(x)))
+completes <- names(dat)[which(missingness==0)]
 
+# some redundancies in completes, but this is the big model to start from:
+mod <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 
 par(mfrow=c(2,2))
-plot(relapsemod2)
+# residual plots don't look fantastic, but certainly better than using a linear model for log(seqden). QQ plot isn't expected to fall
+# on the 1-1 line since the error structure is no longer Gaussian
+plot(mod)
 
-#par(mfrow=c(2,2))
-#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage1',],main='Lineage1')
-#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage2',],main='Lineage2')
-#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage3',],main='Lineage3')
-#boxplot(log(seqden)~tbcategory,dat[dat$Major.Lineage=='lineage4',],main='Lineage4')
-#
-#par(mfrow=c(2,1))
-#boxplot(log(seqden)~x04fac_code,dat[dat$tbcategory=='New',],main='tbcategory: New')
-#boxplot(log(seqden)~x04fac_code,dat[dat$tbcategory=='Relapse',],main='tbcategory: Relapse')
+# different corrections like bonferroni, fdr, etc. identify lineage as important, but nothing else:
+which(p.adjust(coef(summary(mod))[,4], method='hochberg')<.05)
+which(p.adjust(coef(summary(mod))[,4], method='bonferroni')<.05)
+which(p.adjust(coef(summary(mod))[,4], method='fdr')<.05)
+which(p.adjust(coef(summary(mod))[,4], method='BY')<.05)
 
+
+# try removing each variable (or groups of variables, such as symptoms and poverty) one at a time to see how much the fit deteriorates
+# to identify the most important contributions to the model fit
+# use AIC and/or ANOVA to assess model performance
+
+# x04fac_code removed:
+mod1 <- glm(seqden~x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod, mod1)
+anova(mod,mod1)
+# no major change
+
+# x05year removed (wasn't significant on its own in the summary, either):
+mod1 <- glm(seqden~x04fac_code           +x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod, mod1)
+# no major change
+
+# x09iptpst removed:
+mod1 <- glm(seqden~x04fac_code+x05year+             x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# no major change
+
+# x10iptdiag removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+              x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# x10iptdiag can be removed
+
+# x17tbtype removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+              x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# x17tbtype can be removed
+
+# x16patcat removed
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+              x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# x16patcat can be removed
+
+# x20hiv removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+           x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# x20hiv can be removed
+
+# x21art removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+     x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# x21art can be removed
+
+# x22cotri removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+        x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# x22cotri can be removed
+
+# x02res removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+      sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# x02res can be removed
+
+# sex removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+   age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# sex can be removed
+
+# age removed (and wasn't significant on its own in the summary):
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+    smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# age can be removed
+
+# smeartest removed:
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+          sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# smeartest can be removed
+
+# try removing the symptom variables
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+   fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+# removing symptoms variables makes AIC increase by 9 points; anova suggests symptoms aren't that important
+AIC(mod,mod1)
+anova(mod,mod1)
+
+
+# try removing economic variables to see how the fit compares
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+   Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+#anova agrees:
+anova(mod,mod1)
+# AIC and anova suggest the economic variables are important on their own
+
+# try removing Major.Lineage
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+        culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# can't remove Major.Lineage
+
+# try removing culture_positive
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+        Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# can remove culture_positive (but tried changing bandwidths to 2 years; now this seems important) 
+
+# try removing Drug.resistance.Tbprofiler
+mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# can remove culture_positive 
+
+# Lots of these made borderline important contributions to model fit. Major.Lineage and the economic variables were the most important, 
+# i.e. only ones which make an obvious contribution by themselves
+# First, ran this for seqden with a 5-yr bandwidth. Running at 2-yr bandwidth, culture_positive seems to become more important, and
+# the result for Major.Lineage and economic variables still holds
+
+# what if we compare the full model with just the ones with economic variables and lineage?
+modlineco <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage,dat,family=Gamma(link='identity'))
+AIC(mod,modlineco)
+anova(mod,modlineco)
+# it seems to be doing pretty well
+
+# what about just Major.Lineage?
+mod1 <- glm(seqden~Major.Lineage,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# very pronounced difference - indicates we need the economic data to help the model fit
+
+# what about just the economic data?
+mod1 <- glm(seqden~fridge+carmotobike+bed+radio+phone,dat,family=Gamma(link='identity'))
+AIC(mod,mod1)
+anova(mod,mod1)
+# Major.Lineage appears necessary (but oddly enough with 1-yr bandwidth, this suggests it's ok to leave out the Major.Lineage data)
+
+
+# The missingness patterns are kind of tricky.
+# It would be nice to include the other economic variables that got tossed out for containing missingness. It seems 
+# like they all have 57 missing values - not too bad
+
+# clinic/hospital visit questions seem to all have 113 missing entries
+
+# Others are much wosre - last_worked_hs has 695 missing entries
+
+
+
+# lump the economic indicators together - haselectricity has 113 NA, the others 57 or 59, if any
+economic <- c('fridge','carmotobike','bed','radio','phone','peopleinhh','sleepinsameroom','cookinglocation','smoke','knowanyonewithtb','haselectricity')
+# fridge, carmotobike, bed, radio, and phone are all positively correlated look at fisher.test(with(dat,table(fridge,carmotobike)), etc.)
+
+
+# fit the model to the smaller set of data that has information about all of the economic indicators:
+mod2 <- glm(seqden~fridge+carmotobike+bed+radio+phone+peopleinhh+sleepinsameroom+cookinglocation+smoke+knowanyonewithtb+haselectricity+Major.Lineage+culture_positive,dat,family=Gamma(link='identity'))
+
+# do the additional economic indicators carry any extra information than the old ones did?
+crud <- apply(dat[,economic],1,is.na)
+crud <- t(crud)
+crud <- apply(crud, 1, sum)
+mod2o <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive,dat[crud==0,],family=Gamma(link='identity'))
+rm(crud)
+AIC(mod2,mod2o)
+anova(mod2,mod2o)
+# doesn't look like the extra economic information is telling us much (but we are fitting to fewer data points now)
+
+# are these newer economic indicators just telling us what we already knew?
+mod2a <- glm(seqden~peopleinhh+sleepinsameroom+cookinglocation+smoke+knowanyonewithtb+haselectricity+Major.Lineage+culture_positive,dat,family=Gamma(link='identity')
+)
+AIC(mod2,mod2a)
+anova(mod2,mod2a)
+# actually, it looks like they're less useful than the older economic data (fridge, carmotobike, bed, radio, phone)
 
 
