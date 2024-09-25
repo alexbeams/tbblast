@@ -868,3 +868,16 @@ anova(modhc,mod)
 # doesn't look like it, but maybe the more detailed information says something interesting...
 
 
+
+
+# ancestral character estimation
+
+lin1inds <- which(dat$Sequence_name %in% tree1$tip.label)
+
+x <- dat[lin1inds,'x04fac_code']
+names(x) <- dat[lin1inds,'Sequence_name']
+
+x <- factor(x)
+
+ace(x, tree1, type='d')
+
