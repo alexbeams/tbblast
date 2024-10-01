@@ -870,14 +870,128 @@ anova(modhc,mod)
 
 
 
-# ancestral character estimation
+# random forest
+require(randomForest)
 
-lin1inds <- which(dat$Sequence_name %in% tree1$tip.label)
 
-x <- dat[lin1inds,'x04fac_code']
-names(x) <- dat[lin1inds,'Sequence_name']
+# first let's set a threshold for high density
+dat$highseqden <- 0
+dat$highseqden[dat$seqden > 5] <- 1
 
-x <- factor(x)
+#randomForest will break if there are columns in the data with all NA's; just select the columns we want
 
-ace(x, tree1, type='d')
+rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden')] 
 
+#split rf dat into a training and test set
+set.seed(117)
+ind <- sample(2, nrow(rfdat), replace=T, prob=c(0.7, 0.3))
+train <- rfdat[ind==1,]
+test <- rfdat[ind==2,]
+
+rf <- randomForest(seqden~., rfdat) 
+
+par(mfrow=c(1,2))
+p1 <- predict(rf, train)
+plot(train$seqden,p1)
+abline(a=0,b=1)
+
+p2 <- predict(rf, test)
+plot(test$seqden, p2)
+abline(a=0,b=1)
+
+varImpPlot(rf,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf)
+
+# not totally out of line with the glm results, although it does think x04fac_code and age are quite important
+
+# try a lasso regression on those same variables
+require(glmnet)
+lassodat <- rfdat
+
+x_vars <- model.matrix(seqden~. , lassodat)
+y_var <- lassodat$seqden
+lambda_seq <- 10^seq(100, -2, by= -.1)
+
+#split test data into test and train
+set.seed(117)
+train = sample(1:nrow(x_vars), nrow(x_vars)/2)
+x_test = (-train)
+
+cv_output <- cv.glmnet(x_vars[train,], y_var[train],
+		alpha = 1, lambda = lambda_seq,
+		nfolds = 5)
+
+best_lam <- cv_output$lambda.min
+best_lam # blows up
+
+lambda <- .2
+lasso_best <- glmnet(x_vars[train,], y_var[train],
+		alpha = 1, lambda = lambda)
+coef(lasso_best)
+
+# penalized Maximum Likelihood wants to select lambda=infinty apparently (?), but
+# coefficients get shrunk to zero roughly according to their level importance we 
+# saw using AIC  
+
+# kind of weird that lasso wants to kill coefficients for particular levels of a factor. 
+# Let's try a group lasso to get rid of all levels of a factor at once.
+require(gglasso)
+
+# introduce a design matrix
+
+modmat <- model.matrix(~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat)
+
+# now, define groups for the group lasso:
+groups <- c(
+	1,	
+	rep(2,11),
+	3,
+	4,
+	5,
+	6,
+	7,7,7,7,
+	8,8,
+	9,
+	10,
+	11,
+	12,
+	13,
+	14,
+	15,15,15,15,15,15,
+	16,16,16,16,16,
+	17,17,17,
+	18,
+	19,19)
+
+gr <- gglasso(modmat,dat$seqden,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
+#coef(gr)
+
+# plot the coefficient trajectories (with labels):
+
+beta <- gr$beta
+lambdas <- gr$lambda
+
+plot_data <- data.frame(
+	lambda=rep(log(lambdas),each=nrow(beta)),
+	coefficient = as.vector(beta),
+	variable = rep(rownames(beta),length(lambdas))
+)
+
+lasplot <- ggplot(plot_data, aes(x = lambda, y = coefficient, color = variable)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "Coefficients vs. log(Lambda)",
+       x = "log(Lambda)", y = "Coefficients") +
+  geom_text(
+    data = plot_data[plot_data$lambda == min(log(lambdas)), ], 
+    aes(label = variable), 
+    hjust = 1.1, size = 3
+  ) +
+  theme(legend.position = "none", 
+        plot.margin = unit(c(1, 1, 1, 1), "lines"))+  # Increase right margin
+  xlim(-12,0)
+
+lasplot
