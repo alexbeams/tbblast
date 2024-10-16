@@ -44,13 +44,16 @@ dat <- merge(blastdat, drugdat, by='Sequence_name')
 # ancestral character estimation
 
 #x04fac_code
-co <- sample(colors(), length(levels(x)))
 
 lin1inds <- which(dat$Sequence_name %in% tree1$tip.label)
 x <- dat[lin1inds,'x04fac_code']
 names(x) <- dat[lin1inds,'Sequence_name']
 x <- factor(x)
 ans <- ace(x, tree1, type='d')
+
+
+co <- sample(colors(), length(levels(x)))
+
 
 plot(tree1, type = "tidy", FALSE, label.offset = 0,cex=0.2)
 tiplabels(pch = 22, bg = co[as.numeric(x)], cex = 1)
@@ -91,7 +94,7 @@ nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.1)
 # let's try something with fewer states, like radio
 
 # phone
-co <- c('blue','red')
+co <- c('white','black')
 
 lin1inds <- which(dat$Sequence_name %in% tree1$tip.label)
 x <- dat[lin1inds,'phone']
@@ -134,6 +137,17 @@ plot(tree4, type = "tidy", FALSE, label.offset = 0,cex=0.1)
 tiplabels(pch = 22, bg = co[as.numeric(x)], cex = 1)
 nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.3)
 
+# radio
+
+lin4inds <- which(dat$Sequence_name %in% tree4$tip.label)
+x <- dat[lin4inds,'radio']
+names(x) <- dat[lin4inds,'Sequence_name']
+x <- factor(x)
+ans <- ace(x, tree4, type='d')
+
+plot(tree4, type = "tidy", FALSE, label.offset = 0,cex=0.1)
+tiplabels(pch = 22, bg = co[as.numeric(x)], cex = 1)
+nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.3)
 
 # hivstatus variables:
 

@@ -281,7 +281,7 @@ povnms <- c('peopleinhh','sleepinsameroom','cookinglocation','smoke',
 # characteristics of the TB diagnosis
 tbdxnms <- c('l28smear','l29xpert','l30cultures','l32id','smeartest','smearstatus',
 	'tbclass','tbategory','genexpertresult','tbsymptomsidentified','tbcategory',
-	'culture_positive')
+	'culture_negitive')
 
 # hiv-related characteristics
 hivnms <- c('ipt','hivstatus','arvtreatment','arvduration','wereyoutakingipt')
@@ -995,3 +995,168 @@ lasplot <- ggplot(plot_data, aes(x = lambda, y = coefficient, color = variable))
   xlim(-12,0)
 
 lasplot
+
+#load in the BLAST.xls file with "cluster", a nbd identifier
+require(readxl)
+blast <- read_excel('BLAST.xls')
+
+# each of dat and blast has pid's that are not in the other (551 in common)
+dat <- merge(dat, blast[,c('pid','cluster')], all.x=T)
+
+# let's rerun the lasso to see if it thinks cluster is important
+
+# introduce a design matrix
+modmat <- model.matrix(~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+cluster,dat)
+
+# now, define groups for the group lasso:
+groups <- c(
+	1,	
+	rep(2,11),
+	3,
+	4,
+	5,
+	6,
+	7,7,7,
+	8,8,
+	9,
+	10,
+	11,
+	12,
+	13,
+	14,
+	15,15,15,15,15,15,
+	16,16,16,16,16,
+	17,17,17,
+	18,
+	19,19,
+	rep(20,72))
+
+gr <- gglasso(modmat,dat[!is.na(dat$cluster),]$seqden,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
+#coef(gr)
+
+# plot the coefficient trajectories (with labels):
+
+beta <- gr$beta
+lambdas <- gr$lambda
+
+plot_data <- data.frame(
+	lambda=rep(log(lambdas),each=nrow(beta)),
+	coefficient = as.vector(beta),
+	variable = rep(rownames(beta),length(lambdas))
+)
+
+lasplot <- ggplot(plot_data, aes(x = lambda, y = coefficient, color = variable)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "Coefficients vs. log(Lambda)",
+       x = "log(Lambda)", y = "Coefficients") +
+  geom_text(
+    data = plot_data[plot_data$lambda == min(log(lambdas)), ], 
+    aes(label = variable), 
+    hjust = 1.1, size = 3
+  ) +
+  theme(legend.position = "none", 
+        plot.margin = unit(c(1, 1, 1, 1), "lines"))+  # Increase right margin
+  xlim(-12,0)
+
+lasplot
+
+# now, we want to look at healthcare utilization
+# lastclinicvisit records the last time they visited a clinic or hospital for any reason
+# a small number of people answered questions about the timing of their last 3 hospital admissions
+# 	(admissionunittone (n=123), admissionunittwo (n=53), admissionunitthree (n=40))
+
+
+
+# some ideas
+# 1. think about a structured coalescent model with 2 hidden populations; can we detect the presence of pop structure?
+# 2. testing might be biased toward particular communities. It would be nice to recover differential prevalence or incidence 
+# 3. Or maybe ask: Given that we think our case-finding is targeted towards a particular group, we would like to use
+#    the genomic data to help us understand how much of the transmission is actually occurring within that group vs. 
+#    migrating into it
+
+#
+d4 <- cophenetic(timetree4)
+
+# if we stratify by hivstatus, do sequences look more or less similar within the positive and negative groups?
+crud = dat[dat$Major.Lineage=='lineage4',]
+
+crud = crud[,c('Sequence_name','hivstatus')]
+hivpos = crud[crud$hivstatus=='Positive',1]
+hivneg = crud[crud$hivstatus=='Negative',1]
+
+# write the numeric indices for pos/neg
+inds.hivpos <- unlist(sapply(hivpos, function(x) which(rownames(d4)==x)))
+inds.hivpos <- sort(unname(inds.hivpos))
+
+inds.hivneg <- unlist(sapply(hivneg, function(x) which(rownames(d4)==x)))
+inds.hivneg <- sort(unname(inds.hivneg))
+
+
+d4.hivpos <- d4[inds.hivpos,inds.hivpos]
+d4.hivneg <- d4[inds.hivneg,inds.hivneg]
+
+d4.hivstatus <- d4[c(inds.hivpos,inds.hivneg),c(inds.hivpos,inds.hivneg)]
+
+# within-hivpositive distances:
+dij.hivpos <- d4.hivpos
+dij.hivpos <- dij.hivpos[upper.tri(dij.hivpos)]
+
+# within-hivnegitive distances:
+dij.hivneg <- d4.hivneg
+dij.hivneg <- dij.hivneg[upper.tri(dij.hivneg)]
+
+# across-group distances:
+dij.cross <- d4[inds.hivpos,inds.hivneg]
+
+hivneg <- data.frame(hivstatus='hivneg',dist=dij.hivneg)
+hivpos <- data.frame(hivstatus='hivpos',dist=dij.hivpos)
+hivcross <- data.frame(hivstatus='hivcross',dist=c(dij.cross))
+
+hivdat <- rbind(hivneg,hivpos,hivcross)
+
+# doesn't look like distances within or between hivstatus groups are different:
+plot(dist~as.factor(hivstatus),hivdat)
+
+#what about "phone"?
+
+crud = dat[dat$Major.Lineage=='lineage4',]
+
+crud = crud[,c('Sequence_name','phone')]
+phoneyes = crud[crud$phone=='Yes',1]
+phoneno = crud[crud$phone=='No',1]
+
+# write the numeric indices for pos/neg
+inds.phoneyes <- unlist(sapply(phoneyes, function(x) which(rownames(d4)==x)))
+inds.phoneyes <- sort(unname(inds.phoneyes))
+
+inds.phoneno <- unlist(sapply(phoneno, function(x) which(rownames(d4)==x)))
+inds.phoneno <- sort(unname(inds.phoneno))
+
+
+d4.phoneyes <- d4[inds.phoneyes,inds.phoneyes]
+d4.phoneno <- d4[inds.phoneno,inds.phoneno]
+
+d4.hivstatus <- d4[c(inds.phoneyes,inds.phoneno),c(inds.phoneyes,inds.phoneno)]
+
+# within-phoneyesitive distances:
+dij.phoneyes <- d4.phoneyes
+dij.phoneyes <- dij.phoneyes[upper.tri(dij.phoneyes)]
+
+# within-phonenoitive distances:
+dij.phoneno <- d4.phoneno
+dij.phoneno <- dij.phoneno[upper.tri(dij.phoneno)]
+
+# across-group distances:
+dij.cross <- d4[inds.phoneyes,inds.phoneno]
+
+phoneno <- data.frame(phone='phoneno',dist=dij.phoneno)
+phoneyes <- data.frame(phone='phoneyes',dist=dij.phoneyes)
+phonecross <- data.frame(phone='phonecross',dist=c(dij.cross))
+
+phonedat <- rbind(phoneno,phoneyes,phonecross)
+
+# doesn't look like distances within or between phone groups are different:
+plot(dist~as.factor(phone),phonedat)
+
+
