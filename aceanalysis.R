@@ -55,10 +55,10 @@ ans <- ace(x, tree1, type='d')
 co <- sample(colors(), length(levels(x)))
 
 
-plot(tree1, type = "tidy", FALSE, label.offset = 0,cex=0.2)
+plot(tree1, type = "tidy", FALSE, label.offset = 0,cex=0.2,main='Lineage 1: x04fac_code')
 tiplabels(pch = 22, bg = co[as.numeric(x)], cex = 1)
-nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.2)
-
+nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.3)
+legend('bottomleft',pch=19,col=co,legend=colnames(ans$lik.anc),bty='n')
 
 lin2inds <- which(dat$Sequence_name %in% tree2$tip.label)
 x <- dat[lin2inds,'x04fac_code']
@@ -94,7 +94,7 @@ nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.1)
 # let's try something with fewer states, like radio
 
 # phone
-co <- c('white','black')
+co <- c('blue','red')
 
 lin1inds <- which(dat$Sequence_name %in% tree1$tip.label)
 x <- dat[lin1inds,'phone']
@@ -102,9 +102,11 @@ names(x) <- dat[lin1inds,'Sequence_name']
 x <- factor(x)
 ans <- ace(x, tree1, type='d')
 
-plot(tree1, type = "tidy", FALSE, label.offset = 0,cex=0.2)
+plot(tree1, type = "tidy", FALSE, label.offset = 0,cex=0.2,main='Lineage 1: phone')
 tiplabels(pch = 22, bg = co[as.numeric(x)], cex = 1)
-nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.2)
+nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.3)
+legend('bottomleft',pch=20,col=co,legend=colnames(ans$lik.anc),bty='n',title='Phone')
+
 
 
 lin2inds <- which(dat$Sequence_name %in% tree2$tip.label)
@@ -163,9 +165,10 @@ names(x) <- dat[lin1inds,'Sequence_name']
 x <- factor(x)
 ans <- ace(x, tree1, type='d')
 
-plot(tree1, type = "tidy", FALSE, label.offset = 0,cex=0.2)
-tiplabels(pch = 22, bg = co[as.numeric(x)], cex = 1)
-nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.2)
+plot(tree1, type = "fan", FALSE, label.offset = 0,cex=0.1,
+	main='Lineage 1: hivstatus')
+tiplabels(pch = 22, bg = co[as.numeric(x)], cex = .8)
+nodelabels(thermo = ans$lik.anc, piecol = co, cex = 0.4)
 
 
 lin2inds <- which(dat$Sequence_name %in% tree2$tip.label)

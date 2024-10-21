@@ -6,7 +6,7 @@ rm(list=ls())
 library(ape)
 library(ggplot2)
 library(ggtree)
-library(Biostrings)
+#library(Biostrings)
 library(RColorBrewer)
 library(gridExtra)
 library(lme4)
@@ -823,6 +823,18 @@ AIC(mod,mod1)
 anova(mod,mod1)
 # Major.Lineage appears necessary (but oddly enough with 1-yr bandwidth, this suggests it's ok to leave out the Major.Lineage data)
 
+# let's examine cluster with economic indicators and Major.lineage:
+mod_clust1 <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage+cluster,dat,family=Gamma(link='identity'))
+mod_clust0 <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage,dat[!is.na(dat$cluster),],family=Gamma(link='identity'))
+AIC(mod_clust0,mod_clust1)
+
+#not favored according to AIC... could it be a proxy for economic status? 
+mod_clust1 <- glm(seqden~Major.Lineage+cluster,dat,family=Gamma(link='identity'))
+mod_clust0 <- glm(seqden~Major.Lineage,dat[!is.na(dat$cluster),],family=Gamma(link='identity'))
+AIC(mod_clust0,mod_clust1)
+
+# just a marginal improvement over Major.Lineage, ~8 AIC values.. so borderline
+
 
 # The missingness patterns are kind of tricky.
 # It would be nice to include the other economic variables that got tossed out for containing missingness. It seems 
@@ -867,8 +879,19 @@ AIC(modhc,mod)
 anova(modhc,mod)
 # doesn't look like it, but maybe the more detailed information says something interesting...
 
+# let's see if lastclinicvisit does anything:
+mod_clin0 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop,dat[!is.na(dat$lastclinicvisit),],family=Gamma(link='identity'))
 
+mod_clin1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop+lastclinicvisit,dat,family=Gamma(link='identity'))
 
+#convergence issues... not sure why
+
+# the vast majority of sequences had their last clinic visit in the last 6 months.
+# there isn't an obvious association between LBI and lastclinicvisit. LBI might be skewed high...
+# but it seems difficult to tell
+
+table(dat$lastclinicvisit)
+boxplot(seqden~lastclinicvisit,dat)
 
 # random forest
 require(randomForest)
@@ -892,11 +915,13 @@ rf <- randomForest(seqden~., rfdat)
 
 par(mfrow=c(1,2))
 p1 <- predict(rf, train)
-plot(train$seqden,p1)
+plot(train$seqden,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
+	xlim=c(0,20),ylim=c(0,20))
 abline(a=0,b=1)
 
 p2 <- predict(rf, test)
-plot(test$seqden, p2)
+plot(test$seqden, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
+	xlim=c(0,20), ylim=c(0,20))
 abline(a=0,b=1)
 
 varImpPlot(rf,
@@ -906,6 +931,74 @@ varImpPlot(rf,
 importance(rf)
 
 # not totally out of line with the glm results, although it does think x04fac_code and age are quite important
+
+# 551 datapoints have a value for cluster (a nbd identifier)
+# let's see how including this improves things:
+
+rfdat_clust <- dat[!is.na(dat$clust),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden','cluster')] 
+
+#split rf dat into a training and test set
+set.seed(117)
+ind <- sample(2, nrow(rfdat_clust), replace=T, prob=c(0.7, 0.3))
+train <- rfdat_clust[ind==1,]
+test <- rfdat_clust[ind==2,]
+
+rf_clust <- randomForest(seqden~., rfdat_clust) 
+
+par(mfrow=c(1,2))
+p1 <- predict(rf_clust, train)
+plot(train$seqden,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
+	xlim=c(0,20),ylim=c(0,20))
+abline(a=0,b=1)
+
+p2 <- predict(rf_clust, test)
+plot(test$seqden, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
+	xlim=c(0,20), ylim=c(0,20))
+abline(a=0,b=1)
+
+par(mfrow=c(1,1))
+varImpPlot(rf_clust,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf_clust)
+
+# cluster is identified as very important
+boxplot(seqden~cluster,dat,xlab='cluster',ylab='LBI')
+
+# let's try including lastclinicvisit in random forest:
+rfdat_lastclinicvisit <- dat[!is.na(dat$lastclinicvisit),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden','lastclinicvisit')] 
+
+#split rf dat into a training and test set
+set.seed(117)
+ind <- sample(2, nrow(rfdat_lastclinicvisit), replace=T, prob=c(0.7, 0.3))
+train <- rfdat_lastclinicvisit[ind==1,]
+test <- rfdat_lastclinicvisit[ind==2,]
+
+rf_lastclinicvisit <- randomForest(seqden~., rfdat_lastclinicvisit) 
+
+par(mfrow=c(1,2))
+p1 <- predict(rf_lastclinicvisit, train)
+plot(train$seqden,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
+	xlim=c(0,20),ylim=c(0,20))
+abline(a=0,b=1)
+
+p2 <- predict(rf_lastclinicvisit, test)
+plot(test$seqden, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
+	xlim=c(0,20), ylim=c(0,20))
+abline(a=0,b=1)
+
+par(mfrow=c(1,1))
+varImpPlot(rf_lastclinicvisit,
+           sort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+importance(rf_lastclinicvisit)
+
+# lastclinicvisit doesn't make the top ten 
+boxplot(seqden~lastclinicvisit,dat,xlab='lastclinicvisit',ylab='LBI')
+
+
 
 # try a lasso regression on those same variables
 require(glmnet)
@@ -1066,6 +1159,64 @@ lasplot
 # a small number of people answered questions about the timing of their last 3 hospital admissions
 # 	(admissionunittone (n=123), admissionunittwo (n=53), admissionunitthree (n=40))
 
+# let's just see if we can see anything from lastclinicvisit
+
+# introduce a design matrix
+modmat <- model.matrix(~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+cluster+lastclinicvisit,dat)
+
+# now, define groups for the group lasso:
+groups <- c(
+	1,	
+	rep(2,10), # one of the locations is not represented in this subset of the data
+	3,
+	4,
+	5,
+	6,
+	7,7,7,
+	8,8,
+	9,
+	10,
+	11,
+	12,
+	13,
+	14,
+	15,15,15,15,15,15,
+	16,16,16,16,16,
+	17,17,17,
+	18,
+	19,19,
+	rep(20,72),
+	rep(21,4))
+
+#gr <- gglasso(modmat,dat[!is.na(dat$cluster) & !is.na(dat$lastclinicvisit),]$seqden,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
+
+
+# plot the coefficient trajectories (with labels):
+
+beta <- gr$beta
+lambdas <- gr$lambda
+
+plot_data <- data.frame(
+        lambda=rep(log(lambdas),each=nrow(beta)),
+        coefficient = as.vector(beta),
+        variable = rep(rownames(beta),length(lambdas))
+)
+
+lasplot <- ggplot(plot_data, aes(x = lambda, y = coefficient, color = variable)) +
+  geom_line() +
+  theme_minimal() +
+  labs(title = "Coefficients vs. log(Lambda)",
+       x = "log(Lambda)", y = "Coefficients") +
+  geom_text(
+    data = plot_data[plot_data$lambda == min(log(lambdas)), ],
+    aes(label = variable),
+    hjust = 1.1, size = 3
+  ) +
+  theme(legend.position = "none",
+        plot.margin = unit(c(1, 1, 1, 1), "lines"))+  # Increase right margin
+  xlim(-12,0)
+
+lasplot
 
 
 # some ideas
