@@ -244,6 +244,14 @@ names(drugdat)[1] <- 'Sequence_name'
 # merge them by sequence name
 dat <- merge(blastdat, drugdat, by='Sequence_name')
 
+# load in the dataframe that contains "cluster", a nbd identifier
+require(readxl)
+blast <- read_excel('BLAST.xls')
+
+# each of dat and blast has pid's that are not in the other (551 in common)
+dat <- merge(dat, blast[,c('pid','cluster')], all.x=T)
+
+
 # create some convenient names for groups of variables
 
 # redundant columns, unhelpful columns, 
@@ -469,6 +477,13 @@ p.seqden.timetree3 <- p.timetree3 + geom_tippoint(aes(color=seqden),size=dotsize
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: timetree 3')
+
+posterfig <- p.timetree3 + geom_tippoint(aes(color=seqden),size=1.2) +
+	geom_nodepoint(aes(color=seqden),size=dotsize) +
+	scale_color_gradient(high='red',low='blue') +
+	theme_tree2() +
+	ggtitle('Local Branching Index for Lineage 3 Sequences')+
+	labs(color='LBI')	
 
 p.seqden.timetree4 <- p.timetree4 + geom_tippoint(aes(color=seqden),size=dotsize) +
 	geom_nodepoint(aes(color=seqden),size=dotsize) +
@@ -903,7 +918,14 @@ dat$highseqden[dat$seqden > 5] <- 1
 
 #randomForest will break if there are columns in the data with all NA's; just select the columns we want
 
-rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden')] 
+#rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden')] 
+
+rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden')] 
+
+
+rfdat$x04fac_code[rfdat$x04fac_code == 'Queen Elizabeth Central Hospital'] <- 'QECH'
+#for visualizing partial dependence later:
+rfdat$x04fac_code <- as.factor(rfdat$x04fac_code)
 
 #split rf dat into a training and test set
 set.seed(117)
@@ -931,11 +953,22 @@ varImpPlot(rf,
 importance(rf)
 
 # not totally out of line with the glm results, although it does think x04fac_code and age are quite important
+pdf(file='rf_partialPlot_x04fac_code.pdf',width=18,height=4)
+partialPlot(rf,rfdat,x04fac_code)
+dev.off()
+
+pdf(file='rf_partialPlot_age.pdf',width=4,height=4)
+partialPlot(rf,rfdat,age)
+dev.off()
+
 
 # 551 datapoints have a value for cluster (a nbd identifier)
 # let's see how including this improves things:
 
 rfdat_clust <- dat[!is.na(dat$clust),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden','cluster')] 
+
+#for visualizing partial depence on cluster later:
+rfdat_clust$cluster <- as.factor(rfdat_clust$cluster)
 
 #split rf dat into a training and test set
 set.seed(117)
@@ -964,7 +997,11 @@ varImpPlot(rf_clust,
 importance(rf_clust)
 
 # cluster is identified as very important
+#partialPlot(rf_clust,rfdat_clust,cluster) # too many for this to work, it seems.
+
+pdf(file='lbi_vs_cluster.pdf',height=4,width=16)
 boxplot(seqden~cluster,dat,xlab='cluster',ylab='LBI')
+dev.off()
 
 # let's try including lastclinicvisit in random forest:
 rfdat_lastclinicvisit <- dat[!is.na(dat$lastclinicvisit),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden','lastclinicvisit')] 
