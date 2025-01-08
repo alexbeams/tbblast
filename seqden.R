@@ -148,7 +148,7 @@ getseqden <- function(tree,tau){
 tau.timetree1 <- 5
 tau.timetree2 <- 5
 tau.timetree3 <- 5
-tau.timetree4 <- 5
+tau.timetree4 <- 5 # modify to look at 5, 50, and 500
 
 # no idea what the bandwidths for untimed trees should be; probably don't even want to use
 # the untimed trees
@@ -166,10 +166,27 @@ seqden.tree2 <- apply(dist.tree2, 1, function(x) sum(exp(-x/tau.tree2)) )
 seqden.tree3 <- apply(dist.tree3, 1, function(x) sum(exp(-x/tau.tree3)) )
 seqden.tree4 <- apply(dist.tree4, 1, function(x) sum(exp(-x/tau.tree4)) )
 
-seqden.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/tau.timetree1)) )
-seqden.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/tau.timetree2)) )
-seqden.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/tau.timetree3)) )
-seqden.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/tau.timetree4)) )
+
+#modifying to include different bandwidths here: using tau=5, 50, 500 for each:
+seqdenlow.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/5)) )
+seqdenmed.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/50)) )
+seqdenhigh.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/500)) )
+
+seqdenlow.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/5)) )
+seqdenmed.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/50)) )
+seqdenhigh.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/500)) )
+
+seqdenlow.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/5)) )
+seqdenmed.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/50)) )
+seqdenhigh.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/500)) )
+
+seqdenlow.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/5)) )
+seqdenmed.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/50)) )
+seqdenhigh.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/500)) )
+
+#seqden.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/tau.timetree2)) )
+#seqden.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/tau.timetree3)) )
+#seqden.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/tau.timetree4)) )
 
 #need to assign labels to the internal nodes of the trees:
 tree$node.label <- paste0('node',1:tree$Nnode)
@@ -200,16 +217,30 @@ df.tree4 <- data.frame(Sequence_name = c(tree4$tip.label,tree4$node.label),
 	seqden=seqden.tree4)
 
 df.timetree1 <- data.frame(Sequence_name = c(timetree1$tip.label,timetree1$node.label),
-	seqden=seqden.timetree1)
+	seqdenlow=seqdenlow.timetree1,
+	seqdenmed=seqdenmed.timetree1,
+	seqdenhigh=seqdenhigh.timetree1)
 
 df.timetree2 <- data.frame(Sequence_name = c(timetree2$tip.label,timetree2$node.label),
-	seqden=seqden.timetree2)
+	seqdenlow=seqdenlow.timetree2,
+	seqdenmed=seqdenmed.timetree2,
+	seqdenhigh=seqdenhigh.timetree2)
 
 df.timetree3 <- data.frame(Sequence_name = c(timetree3$tip.label,timetree3$node.label),
-	seqden=seqden.timetree3)
+	seqdenlow=seqdenlow.timetree3,
+	seqdenmed=seqdenmed.timetree3,
+	seqdenhigh=seqdenhigh.timetree3)
 
 df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.label),
-	seqden=seqden.timetree4)
+	seqdenlow=seqdenlow.timetree4,
+	seqdenmed=seqdenmed.timetree4,
+	seqdenhigh=seqdenhigh.timetree4)
+
+#df.timetree3 <- data.frame(Sequence_name = c(timetree3$tip.label,timetree3$node.label),
+#	seqden=seqden.timetree3)
+
+#df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.label),
+#	seqden=seqden.timetree4)
 
 # look at some other functions of distance as well, e.g. variance
 df.tree$var <- apply(dist.tree, 1, var)
@@ -365,10 +396,10 @@ dat4 <- dat[dat$Major.Lineage=='lineage4',]
 # merge the sequence density values - these now have a row for each internal node, all with NA except
 # for the seqden values
 
-dat1m <- merge(dat1, df.timetree1[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
-dat2m <- merge(dat2, df.timetree2[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
-dat3m <- merge(dat3, df.timetree3[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
-dat4m <- merge(dat4, df.timetree4[,c('Sequence_name','seqden')], by='Sequence_name',all=T) 
+dat1m <- merge(dat1, df.timetree1[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
+dat2m <- merge(dat2, df.timetree2[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
+dat3m <- merge(dat3, df.timetree3[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
+dat4m <- merge(dat4, df.timetree4[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
 
 
 # merge all of the other data onto the tree dataframes
@@ -430,63 +461,63 @@ p.timetree4 <- p.timetree4 %<+% df.timetree4m
 p.tree1 + geom_tippoint(aes(color=hivstatus))
 p.tree4 + geom_tippoint(aes(color=hivstatus))
 
-p.seqden.tree <- p.tree + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.tree <- p.tree + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: ML tree')
 
-p.seqden.tree1 <- p.tree1 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.tree1 <- p.tree1 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: tree 1')
 
-p.seqden.tree2 <- p.tree2 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.tree2 <- p.tree2 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: tree 2')
 
-p.seqden.tree3 <- p.tree3 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.tree3 <- p.tree3 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: tree 3')
 
-p.seqden.tree4 <- p.tree4 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.tree4 <- p.tree4 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: tree 4')
 
-p.seqden.timetree1 <- p.timetree1 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.timetree1 <- p.timetree1 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: timetree 1')
 
-p.seqden.timetree2 <- p.timetree2 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.timetree2 <- p.timetree2 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: timetree 2')
 
-p.seqden.timetree3 <- p.timetree3 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.timetree3 <- p.timetree3 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: timetree 3')
 
-posterfig <- p.timetree3 + geom_tippoint(aes(color=seqden),size=1.2) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+posterfig <- p.timetree3 + geom_tippoint(aes(color=seqdenlow),size=1.2) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Local Branching Index for Lineage 3 Sequences')+
 	labs(color='LBI')	
 
-p.seqden.timetree4 <- p.timetree4 + geom_tippoint(aes(color=seqden),size=dotsize) +
-	geom_nodepoint(aes(color=seqden),size=dotsize) +
+p.seqden.timetree4 <- p.timetree4 + geom_tippoint(aes(color=seqdenlow),size=dotsize) +
+	geom_nodepoint(aes(color=seqdenlow),size=dotsize) +
 	scale_color_gradient(high='red',low='blue') +
 	theme_tree2() +
 	ggtitle('Sequence density: timetree 4')
@@ -524,158 +555,158 @@ modnms <- c('sex','age','hivstatus','arvtreatment','ipt','anyhivclinic','outcome
 	'tbsymptomsidentified','x04fac_code',symnms)
 
 
-mod <- lm(log(seqden)~as.factor(sex) + age + as.factor(hivstatus) +
+mod <- lm(log(seqdenlow)~as.factor(sex) + age + as.factor(hivstatus) +
 	as.factor(anyhivclinic) + as.factor(outcome) + as.factor(tbsymptomsidentified) + 
 	as.factor(x04fac_code) + numsymptoms, dat4 )
 
 # look at the variables in isolation for lineage 4:
 
 # sex and age might matter on their own at larger bandwidths, but not for small ones:
-summary(lm(log(seqden)~as.factor(sex),dat4))
+summary(lm(log(seqdenlow)~as.factor(sex),dat4))
 
 # this may be meaningless. The magnitude of the effect is pretty small (again, only for a larger bandwidth)
-summary(lm(log(seqden)~age,dat4))
+summary(lm(log(seqdenlow)~age,dat4))
 
 # no signal from hivstatus:
-summary(lm(log(seqden)~as.factor(hivstatus),dat4))
+summary(lm(log(seqdenlow)~as.factor(hivstatus),dat4))
 
 # no signal from anyhivclinic:
-summary(lm(log(seqden)~as.factor(anyhivclinic),dat4))
+summary(lm(log(seqdenlow)~as.factor(anyhivclinic),dat4))
 
 # no signal from outcome:
-summary(lm(log(seqden)~as.factor(outcome),dat4))
+summary(lm(log(seqdenlow)~as.factor(outcome),dat4))
 
 # no signal from tbsymptomsidentified (but this had 115 NAs):
-summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat4))
+summary(lm(log(seqdenlow)~as.factor(tbsymptomsidentified),dat4))
 
 # GateWay from x04fac_code is where the most immediately related sequences comes from (using 2yr bandwidth)
-summary(lm(log(seqden)~as.factor(x04fac_code),dat4))
+summary(lm(log(seqdenlow)~as.factor(x04fac_code),dat4))
 
 # strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
 #	are Sensitive (only at larger bw's, however):
-summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler),dat4))
+summary(lm(log(seqdenlow)~as.factor(Drug.resistance.Tbprofiler),dat4))
 # However: of 701 rows, 667 sensitivee, 30 resistant, 4 are MDR
 table(dat4$Drug.resistance.Tbprofiler)
 
 # no signal from anyop:
-summary(lm(log(seqden)~as.factor(anyop),dat4))
+summary(lm(log(seqdenlow)~as.factor(anyop),dat4))
 
 
-# relapse in tbcategory seems positively associated with seqden at 2-yr bw:
-summary(lm(log(seqden)~as.factor(tbcategory),dat4))
-summary(lm(log(seqden)~as.factor(tbcategory)+Major.Lineage,dat))
+# relapse in tbcategory seems positively associated with seqdenlow at 2-yr bw:
+summary(lm(log(seqdenlow)~as.factor(tbcategory),dat4))
+summary(lm(log(seqdenlow)~as.factor(tbcategory)+Major.Lineage,dat))
 # relationship is clearer including all lineages; the effect decreases a small amount
 
 # no signal from tbclass
-summary(lm(log(seqden)~as.factor(tbclass),dat4))
+summary(lm(log(seqdenlow)~as.factor(tbclass),dat4))
 
 # no signal from l28smear 
-summary(lm(log(seqden)~as.factor(l28smear),dat4))
+summary(lm(log(seqdenlow)~as.factor(l28smear),dat4))
 
 
 # what about lineage 1?
 
 # sex and age might matter on their own:
-summary(lm(log(seqden)~as.factor(sex),dat1))
+summary(lm(log(seqdenlow)~as.factor(sex),dat1))
 
 # this may be meaningless. The magnitude of the effect is pretty small
-summary(lm(log(seqden)~age,dat1))
+summary(lm(log(seqdenlow)~age,dat1))
 
 # no signal from hivstatus:
-summary(lm(log(seqden)~as.factor(hivstatus),dat1))
+summary(lm(log(seqdenlow)~as.factor(hivstatus),dat1))
 
 # lineage 4 has a significantly smaller share of HIV:
 summary(glm(as.factor(hivstatus)~as.factor(Major.Lineage),family=binomial(link='logit'),data=dat))
 
 # there does appear to a signal with hivstatus over all lineages:
-summary(lm(log(seqden)~as.factor(hivstatus),dat))
+summary(lm(log(seqdenlow)~as.factor(hivstatus),dat))
 
 # removing just lineage 4 doesn't reveal a relationshp with hivstatus:
-summary(lm(log(seqden)~as.factor(hivstatus),subset(dat, Major.Lineage %in% c('lineage1','lineage2','lineage3') ) ))
+summary(lm(log(seqdenlow)~as.factor(hivstatus),subset(dat, Major.Lineage %in% c('lineage1','lineage2','lineage3') ) ))
 
 
 
 # no signal from anyhivclinic:
-summary(lm(log(seqden)~as.factor(anyhivclinic),dat1))
+summary(lm(log(seqdenlow)~as.factor(anyhivclinic),dat1))
 
 # no signal from outcome:
-summary(lm(log(seqden)~as.factor(outcome),dat1))
+summary(lm(log(seqdenlow)~as.factor(outcome),dat1))
 
 # no signal from tbsymptomsidentified (but this had 115 NAs):
-summary(lm(log(seqden)~as.factor(tbsymptomsidentified),dat1))
+summary(lm(log(seqdenlow)~as.factor(tbsymptomsidentified),dat1))
 
 #  signals x04fac_code at 5-yr bw: BT Adventist has low density, Chilomoni, Queen Elizabeth, Zingwangwa have higher density 
-summary(lm(log(seqden)~as.factor(x04fac_code),dat1))
+summary(lm(log(seqdenlow)~as.factor(x04fac_code),dat1))
 # at 2-yr bw, Chilomoni and GatWay have significantly higher density for lineage 2; for lineage 4, Chilomoni, Gateway,
 #	Ndirande, and Queen Elizabeth Central Hospital have significantly elevated density; no signal for lineages 1 or 3
 
-summary(lm(log(seqden)~as.factor(x04fac_code)+Major.Lineage,dat))
+summary(lm(log(seqdenlow)~as.factor(x04fac_code)+Major.Lineage,dat))
 # at 2-yr bw, Chilomoni, Gateway, Queen Elizabeth Central are almost signifigant (higher density)
 
 # strong signal from Drug.resistance.Tbprofiler, indicates that the highest density sequences
 #	are Sensitive (but only for lineage 1):
-summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler),dat1))
+summary(lm(log(seqdenlow)~as.factor(Drug.resistance.Tbprofiler),dat1))
 # However: of 99 rows, 91 sensitivee, 8 resistant, 0 are MDR
 table(dat1$Drug.resistance.Tbprofiler)
 
-summary(lm(log(seqden)~as.factor(Drug.resistance.Tbprofiler)+Major.Lineage,dat))
+summary(lm(log(seqdenlow)~as.factor(Drug.resistance.Tbprofiler)+Major.Lineage,dat))
 # no clear signal here
 
 # no signal from anyop:
-summary(lm(log(seqden)~as.factor(anyop),dat1))
+summary(lm(log(seqdenlow)~as.factor(anyop),dat1))
 
 
 # weak signal from tbcategory (2-yr bw):
-summary(lm(log(seqden)~as.factor(tbcategory),dat1))
+summary(lm(log(seqdenlow)~as.factor(tbcategory),dat1))
 
-summary(lm(log(seqden)~as.factor(tbcategory)+Major.Lineage,dat))
-# strongest signal from looking at the full data (lineages 1 and 4 show a positive relationship with seqden and relapse
+summary(lm(log(seqdenlow)~as.factor(tbcategory)+Major.Lineage,dat))
+# strongest signal from looking at the full data (lineages 1 and 4 show a positive relationship with seqdenlow and relapse
 #	on their own)
 
 # no signal from tbclass
-summary(lm(log(seqden)~as.factor(tbclass),dat1))
+summary(lm(log(seqdenlow)~as.factor(tbclass),dat1))
 
 # no signal from l28smear 
-summary(lm(log(seqden)~as.factor(l28smear),dat1))
+summary(lm(log(seqdenlow)~as.factor(l28smear),dat1))
 
 
 # what about numsymptoms?
-summary(lm(log(seqden)~numsymptoms,dat2))
+summary(lm(log(seqdenlow)~numsymptoms,dat2))
 
 
 # some other interesting plots:
 
-plot(seqden~as.factor(smearstatus),dat4)
+plot(seqdenlow~as.factor(smearstatus),dat4)
 
-plot(seqden~as.factor(Major.Lineage),dat)
+plot(seqdenlow~as.factor(Major.Lineage),dat)
 
-plot(seqden~as.factor(Drug.resistance.Tbprofiler),dat)
+plot(seqdenlow~as.factor(Drug.resistance.Tbprofiler),dat)
 
-plot(seqden~as.factor(outcome),dat)
+plot(seqdenlow~as.factor(outcome),dat)
 
-plot(seqden~as.factor(agegroup),dat)
+plot(seqdenlow~as.factor(agegroup),dat)
 
-plot(seqden~as.factor(hivstatus),dat)
+plot(seqdenlow~as.factor(hivstatus),dat)
 
-plot(seqden~as.factor(hivstatus),dat2)
+plot(seqdenlow~as.factor(hivstatus),dat2)
 
 
-plot(seqden~as.factor(ipt),dat3)
-plot(seqden~as.factor(ipt),dat)
+plot(seqdenlow~as.factor(ipt),dat3)
+plot(seqdenlow~as.factor(ipt),dat)
 
 # Unknown_Inconclusive only has 2 entries
-plot(seqden~as.factor(smearstatus),dat)
+plot(seqdenlow~as.factor(smearstatus),dat)
 
 # are the relationships different for different lineages?
-plot(seqden~as.factor(trimoxazole),dat)
+plot(seqdenlow~as.factor(trimoxazole),dat)
 
-plot(seqden~as.factor(rifresult),dat1)
-plot(seqden~as.factor(rifresult),dat4)
+plot(seqdenlow~as.factor(rifresult),dat1)
+plot(seqdenlow~as.factor(rifresult),dat4)
 
 
-summary(lm(log(seqden)~as.factor(tbcategory)+Major.Lineage+x04fac_code+age+sex+l28smear,dat))
+summary(lm(log(seqdenlow)~as.factor(tbcategory)+Major.Lineage+x04fac_code+age+sex+l28smear,dat))
 
-relapsemod <- lm(log(seqden)~tbcategory+Major.Lineage+x04fac_code+age+sex+l28smear+hivstatus+anyhivclinic+outcome+tbsymptomsidentified+sympsweat+sympfever+sympblood+sympcough+ipt+wereyoutakingipt,dat)
+relapsemod <- lm(log(seqdenlow)~tbcategory+Major.Lineage+x04fac_code+age+sex+l28smear+hivstatus+anyhivclinic+outcome+tbsymptomsidentified+sympsweat+sympfever+sympblood+sympcough+ipt+wereyoutakingipt,dat)
 
 
 ###################################
@@ -688,10 +719,10 @@ missingness <- apply(dat,2,function(x) sum(is.na(x)))
 completes <- names(dat)[which(missingness==0)]
 
 # some redundancies in completes, but this is the big model to start from:
-mod <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 
 par(mfrow=c(2,2))
-# residual plots don't look fantastic, but certainly better than using a linear model for log(seqden). QQ plot isn't expected to fall
+# residual plots don't look fantastic, but certainly better than using a linear model for log(seqdenlow). QQ plot isn't expected to fall
 # on the 1-1 line since the error structure is no longer Gaussian
 plot(mod)
 
@@ -707,121 +738,121 @@ which(p.adjust(coef(summary(mod))[,4], method='BY')<.05)
 # use AIC and/or ANOVA to assess model performance
 
 # x04fac_code removed:
-mod1 <- glm(seqden~x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod, mod1)
 anova(mod,mod1)
 # no major change
 
 # x05year removed (wasn't significant on its own in the summary, either):
-mod1 <- glm(seqden~x04fac_code           +x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code           +x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod, mod1)
 # no major change
 
 # x09iptpst removed:
-mod1 <- glm(seqden~x04fac_code+x05year+             x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+             x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # no major change
 
 # x10iptdiag removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+              x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+              x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # x10iptdiag can be removed
 
 # x17tbtype removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+              x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+              x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # x17tbtype can be removed
 
 # x16patcat removed
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+              x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+              x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # x16patcat can be removed
 
 # x20hiv removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+           x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+           x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # x20hiv can be removed
 
 # x21art removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+     x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+     x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # x21art can be removed
 
 # x22cotri removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+        x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+        x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # x22cotri can be removed
 
 # x02res removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+      sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+      sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # x02res can be removed
 
 # sex removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+   age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+   age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # sex can be removed
 
 # age removed (and wasn't significant on its own in the summary):
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+    smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+    smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # age can be removed
 
 # smeartest removed:
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+          sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+          sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # smeartest can be removed
 
 # try removing the symptom variables
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+   fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+   fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 # removing symptoms variables makes AIC increase by 9 points; anova suggests symptoms aren't that important
 AIC(mod,mod1)
 anova(mod,mod1)
 
 
 # try removing economic variables to see how the fit compares
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+   Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+   Major.Lineage+culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 #anova agrees:
 anova(mod,mod1)
 # AIC and anova suggest the economic variables are important on their own
 
 # try removing Major.Lineage
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+        culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+        culture_positive+Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # can't remove Major.Lineage
 
 # try removing culture_positive
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+        Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+        Drug.resistance.Tbprofiler,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # can remove culture_positive (but tried changing bandwidths to 2 years; now this seems important) 
 
 # try removing Drug.resistance.Tbprofiler
-mod1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # can remove culture_positive 
 
 # Lots of these made borderline important contributions to model fit. Major.Lineage and the economic variables were the most important, 
 # i.e. only ones which make an obvious contribution by themselves
-# First, ran this for seqden with a 5-yr bandwidth. Running at 2-yr bandwidth, culture_positive seems to become more important, and
+# First, ran this for seqdenlow with a 5-yr bandwidth. Running at 2-yr bandwidth, culture_positive seems to become more important, and
 # the result for Major.Lineage and economic variables still holds
 
 # what if we compare the full model with just the ones with economic variables and lineage?
-modlineco <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage,dat,family=Gamma(link='identity'))
+modlineco <- glm(seqdenlow~fridge+carmotobike+bed+radio+phone+Major.Lineage,dat,family=Gamma(link='identity'))
 AIC(mod,modlineco)
 anova(mod,modlineco)
 # it seems to be doing pretty well
@@ -833,19 +864,19 @@ anova(mod,mod1)
 # very pronounced difference - indicates we need the economic data to help the model fit
 
 # what about just the economic data?
-mod1 <- glm(seqden~fridge+carmotobike+bed+radio+phone,dat,family=Gamma(link='identity'))
+mod1 <- glm(seqdenlow~fridge+carmotobike+bed+radio+phone,dat,family=Gamma(link='identity'))
 AIC(mod,mod1)
 anova(mod,mod1)
 # Major.Lineage appears necessary (but oddly enough with 1-yr bandwidth, this suggests it's ok to leave out the Major.Lineage data)
 
 # let's examine cluster with economic indicators and Major.lineage:
-mod_clust1 <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage+cluster,dat,family=Gamma(link='identity'))
-mod_clust0 <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage,dat[!is.na(dat$cluster),],family=Gamma(link='identity'))
+mod_clust1 <- glm(seqdenlow~fridge+carmotobike+bed+radio+phone+Major.Lineage+cluster,dat,family=Gamma(link='identity'))
+mod_clust0 <- glm(seqdenlow~fridge+carmotobike+bed+radio+phone+Major.Lineage,dat[!is.na(dat$cluster),],family=Gamma(link='identity'))
 AIC(mod_clust0,mod_clust1)
 
 #not favored according to AIC... could it be a proxy for economic status? 
-mod_clust1 <- glm(seqden~Major.Lineage+cluster,dat,family=Gamma(link='identity'))
-mod_clust0 <- glm(seqden~Major.Lineage,dat[!is.na(dat$cluster),],family=Gamma(link='identity'))
+mod_clust1 <- glm(seqdenlow~Major.Lineage+cluster,dat,family=Gamma(link='identity'))
+mod_clust0 <- glm(seqdenlow~Major.Lineage,dat[!is.na(dat$cluster),],family=Gamma(link='identity'))
 AIC(mod_clust0,mod_clust1)
 
 # just a marginal improvement over Major.Lineage, ~8 AIC values.. so borderline
@@ -867,20 +898,20 @@ economic <- c('fridge','carmotobike','bed','radio','phone','peopleinhh','sleepin
 
 
 # fit the model to the smaller set of data that has information about all of the economic indicators:
-mod2 <- glm(seqden~fridge+carmotobike+bed+radio+phone+peopleinhh+sleepinsameroom+cookinglocation+smoke+knowanyonewithtb+haselectricity+Major.Lineage+culture_positive,dat,family=Gamma(link='identity'))
+mod2 <- glm(seqdenlow~fridge+carmotobike+bed+radio+phone+peopleinhh+sleepinsameroom+cookinglocation+smoke+knowanyonewithtb+haselectricity+Major.Lineage+culture_positive,dat,family=Gamma(link='identity'))
 
 # do the additional economic indicators carry any extra information than the old ones did?
 crud <- apply(dat[,economic],1,is.na)
 crud <- t(crud)
 crud <- apply(crud, 1, sum)
-mod2o <- glm(seqden~fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive,dat[crud==0,],family=Gamma(link='identity'))
+mod2o <- glm(seqdenlow~fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive,dat[crud==0,],family=Gamma(link='identity'))
 rm(crud)
 AIC(mod2,mod2o)
 anova(mod2,mod2o)
 # doesn't look like the extra economic information is telling us much (but we are fitting to fewer data points now)
 
 # are these newer economic indicators just telling us what we already knew?
-mod2a <- glm(seqden~peopleinhh+sleepinsameroom+cookinglocation+smoke+knowanyonewithtb+haselectricity+Major.Lineage+culture_positive,dat,family=Gamma(link='identity')
+mod2a <- glm(seqdenlow~peopleinhh+sleepinsameroom+cookinglocation+smoke+knowanyonewithtb+haselectricity+Major.Lineage+culture_positive,dat,family=Gamma(link='identity')
 )
 AIC(mod2,mod2a)
 anova(mod2,mod2a)
@@ -889,15 +920,15 @@ anova(mod2,mod2a)
 
 
 # let's see if anyhivclinic and anyop add anything:
-modhc <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop,dat,family=Gamma(link='identity'))
+modhc <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop,dat,family=Gamma(link='identity'))
 AIC(modhc,mod)
 anova(modhc,mod)
 # doesn't look like it, but maybe the more detailed information says something interesting...
 
 # let's see if lastclinicvisit does anything:
-mod_clin0 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop,dat[!is.na(dat$lastclinicvisit),],family=Gamma(link='identity'))
+mod_clin0 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop,dat[!is.na(dat$lastclinicvisit),],family=Gamma(link='identity'))
 
-mod_clin1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop+lastclinicvisit,dat,family=Gamma(link='identity'))
+mod_clin1 <- glm(seqdenlow~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16patcat+x20hiv+x21art+x22cotri+x02res+sex+age+smeartest+sympcough+sympsweat+sympfever+sympweight+sympblood+sympbreath+fridge+carmotobike+bed+radio+phone+Major.Lineage+culture_positive+Drug.resistance.Tbprofiler+anyhivclinic+anyop+lastclinicvisit,dat,family=Gamma(link='identity'))
 
 #convergence issues... not sure why
 
@@ -906,21 +937,21 @@ mod_clin1 <- glm(seqden~x04fac_code+x05year+x09iptpst+x10iptdiag+x17tbtype+x16pa
 # but it seems difficult to tell
 
 table(dat$lastclinicvisit)
-boxplot(seqden~lastclinicvisit,dat)
+boxplot(seqdenlow~lastclinicvisit,dat)
 
 # random forest
 require(randomForest)
 
 
 # first let's set a threshold for high density
-dat$highseqden <- 0
-dat$highseqden[dat$seqden > 5] <- 1
+dat$highseqdenlow <- 0
+dat$highseqdenlow[dat$seqdenlow > 5] <- 1
 
 #randomForest will break if there are columns in the data with all NA's; just select the columns we want
 
-#rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden')] 
+#rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqdenlow')] 
 
-rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden')] 
+rfdat <- dat[,c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqdenlow')] 
 
 
 rfdat$x04fac_code[rfdat$x04fac_code == 'Queen Elizabeth Central Hospital'] <- 'QECH'
@@ -933,16 +964,16 @@ ind <- sample(2, nrow(rfdat), replace=T, prob=c(0.7, 0.3))
 train <- rfdat[ind==1,]
 test <- rfdat[ind==2,]
 
-rf <- randomForest(seqden~., rfdat) 
+rf <- randomForest(seqdenlow~., rfdat) 
 
 par(mfrow=c(1,2))
 p1 <- predict(rf, train)
-plot(train$seqden,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
+plot(train$seqdenlow,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
 	xlim=c(0,20),ylim=c(0,20))
 abline(a=0,b=1)
 
 p2 <- predict(rf, test)
-plot(test$seqden, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
+plot(test$seqdenlow, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
 	xlim=c(0,20), ylim=c(0,20))
 abline(a=0,b=1)
 
@@ -965,7 +996,7 @@ dev.off()
 # 551 datapoints have a value for cluster (a nbd identifier)
 # let's see how including this improves things:
 
-rfdat_clust <- dat[!is.na(dat$clust),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden','cluster')] 
+rfdat_clust <- dat[!is.na(dat$clust),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqdenlow','cluster')] 
 
 #for visualizing partial depence on cluster later:
 rfdat_clust$cluster <- as.factor(rfdat_clust$cluster)
@@ -976,16 +1007,16 @@ ind <- sample(2, nrow(rfdat_clust), replace=T, prob=c(0.7, 0.3))
 train <- rfdat_clust[ind==1,]
 test <- rfdat_clust[ind==2,]
 
-rf_clust <- randomForest(seqden~., rfdat_clust) 
+rf_clust <- randomForest(seqdenlow~., rfdat_clust) 
 
 par(mfrow=c(1,2))
 p1 <- predict(rf_clust, train)
-plot(train$seqden,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
+plot(train$seqdenlow,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
 	xlim=c(0,20),ylim=c(0,20))
 abline(a=0,b=1)
 
 p2 <- predict(rf_clust, test)
-plot(test$seqden, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
+plot(test$seqdenlow, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
 	xlim=c(0,20), ylim=c(0,20))
 abline(a=0,b=1)
 
@@ -1000,11 +1031,11 @@ importance(rf_clust)
 #partialPlot(rf_clust,rfdat_clust,cluster) # too many for this to work, it seems.
 
 pdf(file='lbi_vs_cluster.pdf',height=4,width=16)
-boxplot(seqden~cluster,dat,xlab='cluster',ylab='LBI')
+boxplot(seqdenlow~cluster,dat,xlab='cluster',ylab='LBI')
 dev.off()
 
 # let's try including lastclinicvisit in random forest:
-rfdat_lastclinicvisit <- dat[!is.na(dat$lastclinicvisit),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqden','lastclinicvisit')] 
+rfdat_lastclinicvisit <- dat[!is.na(dat$lastclinicvisit),c('x04fac_code','x05year','x09iptpst','x10iptdiag','x17tbtype','x16patcat','x20hiv','x21art','x22cotri','x02res','sex','age','smeartest','sympcough','sympsweat','sympfever','sympweight','sympblood','sympbreath','fridge','carmotobike','bed','radio','phone','Major.Lineage','Drug.resistance.Tbprofiler','anyhivclinic','anyop','seqdenlow','lastclinicvisit')] 
 
 #split rf dat into a training and test set
 set.seed(117)
@@ -1012,16 +1043,16 @@ ind <- sample(2, nrow(rfdat_lastclinicvisit), replace=T, prob=c(0.7, 0.3))
 train <- rfdat_lastclinicvisit[ind==1,]
 test <- rfdat_lastclinicvisit[ind==2,]
 
-rf_lastclinicvisit <- randomForest(seqden~., rfdat_lastclinicvisit) 
+rf_lastclinicvisit <- randomForest(seqdenlow~., rfdat_lastclinicvisit) 
 
 par(mfrow=c(1,2))
 p1 <- predict(rf_lastclinicvisit, train)
-plot(train$seqden,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
+plot(train$seqdenlow,p1, xlab='LBI (training set)', ylab='Predicted LBI', main='Training (70%)',
 	xlim=c(0,20),ylim=c(0,20))
 abline(a=0,b=1)
 
 p2 <- predict(rf_lastclinicvisit, test)
-plot(test$seqden, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
+plot(test$seqdenlow, p2, xlab='LBI (test set)', ylab='Predicted LBI', main='Test (30%)',
 	xlim=c(0,20), ylim=c(0,20))
 abline(a=0,b=1)
 
@@ -1033,7 +1064,7 @@ varImpPlot(rf_lastclinicvisit,
 importance(rf_lastclinicvisit)
 
 # lastclinicvisit doesn't make the top ten 
-boxplot(seqden~lastclinicvisit,dat,xlab='lastclinicvisit',ylab='LBI')
+boxplot(seqdenlow~lastclinicvisit,dat,xlab='lastclinicvisit',ylab='LBI')
 
 
 
@@ -1041,8 +1072,8 @@ boxplot(seqden~lastclinicvisit,dat,xlab='lastclinicvisit',ylab='LBI')
 require(glmnet)
 lassodat <- rfdat
 
-x_vars <- model.matrix(seqden~. , lassodat)
-y_var <- lassodat$seqden
+x_vars <- model.matrix(seqdenlow~. , lassodat)
+y_var <- lassodat$seqdenlow
 lambda_seq <- 10^seq(100, -2, by= -.1)
 
 #split test data into test and train
@@ -1096,7 +1127,7 @@ groups <- c(
 	18,
 	19,19)
 
-gr <- gglasso(modmat,dat$seqden,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
+gr <- gglasso(modmat,dat$seqdenlow,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
 #coef(gr)
 
 # plot the coefficient trajectories (with labels):
@@ -1161,7 +1192,7 @@ groups <- c(
 	19,19,
 	rep(20,72))
 
-gr <- gglasso(modmat,dat[!is.na(dat$cluster),]$seqden,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
+gr <- gglasso(modmat,dat[!is.na(dat$cluster),]$seqdenlow,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
 #coef(gr)
 
 # plot the coefficient trajectories (with labels):
@@ -1225,7 +1256,7 @@ groups <- c(
 	rep(20,72),
 	rep(21,4))
 
-#gr <- gglasso(modmat,dat[!is.na(dat$cluster) & !is.na(dat$lastclinicvisit),]$seqden,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
+#gr <- gglasso(modmat,dat[!is.na(dat$cluster) & !is.na(dat$lastclinicvisit),]$seqdenlow,lambda=exp(seq(-1,-10,length=30)), group=groups, loss='ls',intercept=F)
 
 
 # plot the coefficient trajectories (with labels):
@@ -1346,5 +1377,35 @@ phonedat <- rbind(phoneno,phoneyes,phonecross)
 
 # doesn't look like distances within or between phone groups are different:
 plot(dist~as.factor(phone),phonedat)
+
+# create a dataframe called lbidat and rename seqden to lbi:
+lbidat <- dat
+colnames(lbidat)[159:161] <- c('lbi.low','lbi.med','lbi.high')
+
+
+# make some plots of LBI on the trees:
+
+p1.low <- p.timetree1 + geom_tippoint(aes(color=seqdenlow))
+p1.med <- p.timetree1 + geom_tippoint(aes(color=seqdenmed))
+p1.high <- p.timetree1 + geom_tippoint(aes(color=seqdenhigh))
+
+p2.low <- p.timetree2 + geom_tippoint(aes(color=seqdenlow))
+p2.med <- p.timetree2 + geom_tippoint(aes(color=seqdenmed))
+p2.high <- p.timetree2 + geom_tippoint(aes(color=seqdenhigh))
+
+p3.low <- p.timetree3 + geom_tippoint(aes(color=seqdenlow))
+p3.med <- p.timetree3 + geom_tippoint(aes(color=seqdenmed))
+p3.high <- p.timetree3 + geom_tippoint(aes(color=seqdenhigh))
+
+p4.low <- p.timetree4 + geom_tippoint(aes(color=seqdenlow))
+p4.med <- p.timetree4 + geom_tippoint(aes(color=seqdenmed))
+p4.high <- p.timetree4 + geom_tippoint(aes(color=seqdenhigh))
+
+require(cowplot)
+
+plot_grid(p1.low,p1.med,p1.high,nrow=3,ncol=1)
+plot_grid(p2.low,p2.med,p2.high,nrow=3,ncol=1)
+plot_grid(p3.low,p3.med,p3.high,nrow=3,ncol=1)
+plot_grid(p4.low,p4.med,p4.high,nrow=3,ncol=1)
 
 
