@@ -1,6 +1,11 @@
+# find the bandwidths in LBI that maximize the signal-to-noise ratio across the posterior distribution of trees for each lineage.
+
 
 require(Biostrings)
 require(ape)
+require(treeio)
+
+source("lbi.R") #to calculate LBI
 
 ##load in the alignments - these are just the variable sites:
 #align1 <- readDNAStringSet('lineage_files/alignment_lineage1.fasta')
@@ -121,8 +126,15 @@ align4.clusters <- cutree(hclust(align4.dist),h=12)
 # probably need to read in the posterior distributions of trees in here:
 # refer to the bissemodels.R file
 
-# load in the lineage 4 posterior from delphy:
-read.beast('lineage_4_delphy/beast.trees')
+lin1phi <- read.nexus("lineage_files/beast_files/alignment1.beauti-alignment_lineage1.trees")
+phi1_sample <- sample(lin1phi,size=100)
+
+lin2phi <- read.nexus("lineage_files/beast_files/alignment2.beauti-alignment_lineage2.trees")
+phi2_sample <- sample(lin2phi,size=100)
+
+lin3phi <- read.nexus("lineage_files/beast_files/alignment3.beauti-alignment_lineage3.trees")
+phi3_sample <- sample(lin3phi,size=100)
+
 
 
 # choosing values of tau that give us clear separation among tips, and
@@ -135,7 +147,8 @@ read.beast('lineage_4_delphy/beast.trees')
 #just plot lbi dist for each tip against the average lbi at each tip:
 
 # lineage 1: two clear groups distinguished:
-align1.lbi <- sapply(phi1_sample,function(x) lbi(x,.008))
+tau1 <- .008
+align1.lbi <- sapply(phi1_sample,function(x) lbi(x,tau1))
 
 align1.lbi.mean = apply(align1.lbi,1,mean)
 plot(align1.lbi.mean[1:99],align1.lbi.mean[1:99],
@@ -162,7 +175,8 @@ plot(tauvals.align1,F.align1,type='l',xlab=bquote(tau),ylab='F',
 	main='Alignment 1 LBI signal')
 
 # lineage 2: two clear groups distinguished:
-align2.lbi <- sapply(phi2_sample,function(x) lbi(x,5.25e-4))
+tau2 <- 5.25e-4
+align2.lbi <- sapply(phi2_sample,function(x) lbi(x,tau2))
 
 align2.lbi.mean = apply(align2.lbi,1,mean)
 plot(align2.lbi.mean[1:28],align2.lbi.mean[1:28],
@@ -190,7 +204,8 @@ plot(tauvals.align2,F.align2,type='l',xlab=bquote(tau),ylab='F',
 
 
 # lineage 3: two clear groups distinguished:
-align3.lbi <- sapply(phi3_sample,function(x) lbi(x,.00155))
+tau3 <- .00155
+align3.lbi <- sapply(phi3_sample,function(x) lbi(x,tau3))
 
 align3.lbi.mean = apply(align3.lbi,1,mean)
 plot(align3.lbi.mean[1:61],align3.lbi.mean[1:61],
@@ -218,15 +233,19 @@ plot(tauvals.align3,F.align3,type='l',xlab=bquote(tau),ylab='F',
 
 # lineage 4?
 
-phi4_sample <- lin4phi
+lin4phi <- read.nexus('lineage_4_delphy/alex/lineage4_delphy.trees')
+
+phi4_sample <- sample(lin4phi, 100)
 
 # lineage 4
-align4.lbi <- sapply(phi4_sample,function(x) lbi(x,.004))
+tau4 <- 4.7
+align4.lbi <- sapply(phi4_sample,function(x) lbi(x,tau4))
 
 align4.lbi.mean = apply(align4.lbi,1,mean)
 plot(align4.lbi.mean[1:513],align4.lbi.mean[1:513],
 	xlab='Mean LBI',
-	ylab='LBI from sampled trees',ylim=c(0,.01))
+	ylab='LBI from sampled trees',
+	main=bquote(tau[4]==.(tau4)))
 for(i in 1:100){points(align4.lbi.mean[1:513],align4.lbi[1:513,i])}
 points(align4.lbi.mean[1:513],align4.lbi.mean[1:513],col='red')
 
@@ -237,9 +256,53 @@ getF.align4 <- function(tau){
 	return(F)
 }
 
-tauvals.align4 <- seq(.02,8,length=8)
+tauvals.align4 <- seq(3,6,length=8)
 F.align4 <- sapply(tauvals.align4, getF.align4)
 plot(tauvals.align4,F.align4,type='l',xlab=bquote(tau),ylab='F',
 	main='Alignment 4 LBI signal')
+
+par(mfrow=c(2,2))
+plot(tauvals.align1,F.align1,type='l',xlab=bquote(tau),ylab='F',
+	main='Alignment 1 LBI signal-to-noise')
+
+plot(tauvals.align2,F.align2,type='l',xlab=bquote(tau),ylab='F',
+	main='Alignment 2 LBI signal-to-noise')
+
+plot(tauvals.align3,F.align3,type='l',xlab=bquote(tau),ylab='F',
+	main='Alignment 3 LBI signal-to-noise')
+
+plot(tauvals.align4,F.align4,type='l',xlab=bquote(tau),ylab='F',
+	main='Alignment 4 LBI signal-to-noise')
+
+par(mfrow=c(2,2))
+
+plot(align1.lbi.mean[1:99],align1.lbi.mean[1:99],
+	ylab='LBI from sampled trees',
+	xlab='Mean LBI',
+	main=bquote(tau[1]==.(tau1)))
+for(i in 1:100){points(align1.lbi.mean[1:99],align1.lbi[1:99,i])}
+points(align1.lbi.mean[1:99],align1.lbi.mean[1:99],col='red')
+
+plot(align2.lbi.mean[1:28],align2.lbi.mean[1:28],
+	ylab='LBI from sampled trees',
+	xlab='Mean LBI',
+	main=bquote(tau[2]==.(tau2)))
+for(i in 1:100){points(align2.lbi.mean[1:28],align2.lbi[1:28,i])}
+points(align2.lbi.mean[1:28],align2.lbi.mean[1:28],col='red')
+
+
+plot(align3.lbi.mean[1:61],align3.lbi.mean[1:61],
+	xlab='Mean LBI',
+	ylab='LBI from sampled trees',
+	main=bquote(tau[3]==.(tau3)))
+for(i in 1:100){points(align3.lbi.mean[1:61],align3.lbi[1:61,i])}
+points(align3.lbi.mean[1:61],align3.lbi.mean[1:61],col='red')
+
+plot(align4.lbi.mean[1:513],align4.lbi.mean[1:513],
+        xlab='Mean LBI',
+        ylab='LBI from sampled trees',
+        main=bquote(tau[4]==.(tau4)))
+for(i in 1:100){points(align4.lbi.mean[1:513],align4.lbi[1:513,i])}
+points(align4.lbi.mean[1:513],align4.lbi.mean[1:513],col='red')
 
 

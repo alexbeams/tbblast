@@ -10,6 +10,10 @@ library(ggtree)
 library(RColorBrewer)
 library(gridExtra)
 library(lme4)
+library(treeio)
+
+source('lbi.R')
+source('thd.R')
 
 # read in the .nexus timetree generated from the iq-tree kimura model
 # as well as the data file from Ben S. with lineage info
@@ -200,9 +204,51 @@ timetree2$node.label <- paste0('node',1:timetree2$Nnode)
 timetree3$node.label <- paste0('node',1:timetree3$Nnode)
 timetree4$node.label <- paste0('node',1:timetree4$Nnode)
 
-# set up dataframes with the seqden values for plotting
-df.tree <- data.frame(Sequence_name = c(tree$tip.label,tree$node.label),
-	seqden=seqden.tree)
+# load in the posterior trees for the different lineages, and calculate the average LBI for each
+
+lin1phi <- read.nexus("lineage_files/beast_files/alignment1.beauti-alignment_lineage1.trees")
+phi1_sample <- sample(lin1phi,size=100)
+
+lin2phi <- read.nexus("lineage_files/beast_files/alignment2.beauti-alignment_lineage2.trees")
+phi2_sample <- sample(lin2phi,size=100)
+
+lin3phi <- read.nexus("lineage_files/beast_files/alignment3.beauti-alignment_lineage3.trees")
+phi3_sample <- sample(lin3phi,size=100)
+
+lin4phi <- read.nexus('lineage_4_delphy/alex/lineage4_delphy.trees')
+phi4_sample <- sample(lin4phi, 100)
+
+# taus determined from snp_clustered.R that maximize the signal-to-noise ratio across the posteriors:
+tau1 <- .008
+tau2 <- .000525
+tau3 <- .00155
+tau4 <- 4.7
+
+align1.lbi <- sapply(phi1_sample,function(x) lbi(x,tau1))
+align2.lbi <- sapply(phi2_sample,function(x) lbi(x,tau2))
+align3.lbi <- sapply(phi3_sample,function(x) lbi(x,tau3))
+align4.lbi <- sapply(phi4_sample,function(x) lbi(x,tau4))
+
+align1.lbi.mean <- apply(align1.lbi,1,mean)
+align2.lbi.mean <- apply(align2.lbi,1,mean)
+align3.lbi.mean <- apply(align3.lbi,1,mean)
+align4.lbi.mean <- apply(align4.lbi,1,mean)
+
+align1.lbi.mean <- align1.lbi.mean[1:99]
+align2.lbi.mean <- align2.lbi.mean[1:28]
+align3.lbi.mean <- align3.lbi.mean[1:61]
+align4.lbi.mean <- align4.lbi.mean[1:513]
+
+names(align1.lbi.mean) = phi1_sample[[1]]$tip.label
+names(align2.lbi.mean) = phi2_sample[[1]]$tip.label
+names(align3.lbi.mean) = phi3_sample[[1]]$tip.label
+names(align4.lbi.mean) = phi4_sample[[1]]$tip.label
+
+# need to rename align4.lbi.mean to match the others
+crudnms = sapply(lin4nms, function(x) which(grepl(x,names(align4.lbi.mean)) >0)   )
+align4.lbi.mean <- align4.lbi.mean[crudnms]
+names(align4.lbi.mean) <- lin4nms
+
 
 df.tree1 <- data.frame(Sequence_name = c(tree1$tip.label,tree1$node.label),
 	seqden=seqden.tree1)
@@ -236,6 +282,19 @@ df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.
 	seqdenmed=seqdenmed.timetree4,
 	seqdenhigh=seqdenhigh.timetree4)
 
+# merge the LBI values into these data frames
+crud = data.frame(Sequence_name = names(align1.lbi.mean), lbi=align1.lbi.mean)
+df.timetree1 = merge(df.timetree1, crud,all=T)
+
+crud = data.frame(Sequence_name = names(align2.lbi.mean), lbi=align2.lbi.mean)
+df.timetree2 = merge(df.timetree2, crud,all=T)
+
+crud = data.frame(Sequence_name = names(align3.lbi.mean), lbi=align3.lbi.mean)
+df.timetree3 = merge(df.timetree3, crud, all=T)
+
+crud = data.frame(Sequence_name = names(align4.lbi.mean), lbi=align4.lbi.mean)
+df.timetree4 = merge(df.timetree4, crud, all=T)
+
 #df.timetree3 <- data.frame(Sequence_name = c(timetree3$tip.label,timetree3$node.label),
 #	seqden=seqden.timetree3)
 
@@ -243,7 +302,7 @@ df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.
 #	seqden=seqden.timetree4)
 
 # look at some other functions of distance as well, e.g. variance
-df.tree$var <- apply(dist.tree, 1, var)
+#df.tree$var <- apply(dist.tree, 1, var)
 
 df.tree1$var <- apply(dist.tree1, 1, var)
 df.tree2$var <- apply(dist.tree2, 1, var)
@@ -255,7 +314,7 @@ df.timetree2$var <- apply(dist.timetree2, 1, var)
 df.timetree3$var <- apply(dist.timetree3, 1, var)
 df.timetree4$var <- apply(dist.timetree4, 1, var)
 
-df.tree$mean <- apply(dist.tree, 1, mean)
+#df.tree$mean <- apply(dist.tree, 1, mean)
 
 df.tree1$mean <- apply(dist.tree1, 1, mean)
 df.tree2$mean <- apply(dist.tree2, 1, mean)
@@ -396,10 +455,10 @@ dat4 <- dat[dat$Major.Lineage=='lineage4',]
 # merge the sequence density values - these now have a row for each internal node, all with NA except
 # for the seqden values
 
-dat1m <- merge(dat1, df.timetree1[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
-dat2m <- merge(dat2, df.timetree2[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
-dat3m <- merge(dat3, df.timetree3[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
-dat4m <- merge(dat4, df.timetree4[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh')], by='Sequence_name',all=T) 
+dat1m <- merge(dat1, df.timetree1[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh','lbi')], by='Sequence_name',all=T) 
+dat2m <- merge(dat2, df.timetree2[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh','lbi')], by='Sequence_name',all=T) 
+dat3m <- merge(dat3, df.timetree3[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh','lbi')], by='Sequence_name',all=T) 
+dat4m <- merge(dat4, df.timetree4[,c('Sequence_name','seqdenlow','seqdenmed','seqdenhigh','lbi')], by='Sequence_name',all=T) 
 
 
 # merge all of the other data onto the tree dataframes
@@ -1407,5 +1466,14 @@ plot_grid(p1.low,p1.med,p1.high,nrow=3,ncol=1)
 plot_grid(p2.low,p2.med,p2.high,nrow=3,ncol=1)
 plot_grid(p3.low,p3.med,p3.high,nrow=3,ncol=1)
 plot_grid(p4.low,p4.med,p4.high,nrow=3,ncol=1)
+
+# the plots of LBI ~ time for lineage 4 looks consistent with no new lineages emerging.
+# not sure what's going on with the others.
+
+par(mfrow=c(2,2))
+plot(lbi~as.Date(x05regdate),dat[dat$Major.Lineage=='lineage1',],xlab='Time [years]',ylab='LBI',main='Lineage 1')
+plot(lbi~as.Date(x05regdate),dat[dat$Major.Lineage=='lineage2',],xlab='Time [years]',ylab='LBI',main='Lineage 2')
+plot(lbi~as.Date(x05regdate),dat[dat$Major.Lineage=='lineage3',],xlab='Time [years]',ylab='LBI',main='Lineage 2')
+plot(lbi~as.Date(x05regdate),dat[dat$Major.Lineage=='lineage4',],xlab='Time [years]',ylab='LBI',main='Lineage 4')
 
 
