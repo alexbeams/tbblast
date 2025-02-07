@@ -1476,4 +1476,63 @@ plot(lbi~as.Date(x05regdate),dat[dat$Major.Lineage=='lineage2',],xlab='Time [yea
 plot(lbi~as.Date(x05regdate),dat[dat$Major.Lineage=='lineage3',],xlab='Time [years]',ylab='LBI',main='Lineage 2')
 plot(lbi~as.Date(x05regdate),dat[dat$Major.Lineage=='lineage4',],xlab='Time [years]',ylab='LBI',main='Lineage 4')
 
+# Is there some tau that establishes a clear assocation between hivstatus and lbi? just use timetree4 for now
+
+# there might be an assocation with Drug, but at a high value of tau:
+
+x <- cophenetic(timetree4)
+
+getp <- function(tau){
+	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
+	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
+	cruddat = merge(dat4[-162],lbi)
+	mod <- aov(lbi~Drug.resistance.Tbprofiler,cruddat)
+	p = summary(mod)[[1]][,'Pr(>F)'][1]
+	return(p)
+}
+
+log10tauvals <- seq(-5,5,length=30)
+pvals <- sapply(10^log10tauvals, getp)
+plot(log10tauvals,log10(pvals),ylim=c(-5,0))
+abline(h=log10(.05))
+abline(h=log10(5e-4),lty='dotted')
+
+# let's try relabeling the names on phi4_sample's tips and do this again:
+sapply(phi4_sample[[1]]$tip.label, function(x)  grep(x, lin4nms)  ) -> y
+
+getp.tree <- function(tau,tree){
+	tree$tip.label = lin4nms[y]
+	x <- cophenetic(tree)	
+	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
+	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
+	cruddat = merge(dat4[-162],lbi)
+	mod <- aov(lbi~Drug.resistance.Tbprofiler,cruddat)
+	p = summary(mod)[[1]][,'Pr(>F)'][1]
+	return(p)
+}
+
+log10tauvals <- seq(-5,5,length=30)
+pvals <- sapply(10^log10tauvals, function(x) getp.tree(x,phi4_sample[[1]]))
+plot(log10tauvals,log10(pvals),ylim=c(-5,0))
+abline(h=log10(.05))
+abline(h=log10(5e-4),lty='dotted')
+
+plottree.lin4 <- function(tau,tree){
+	tree$tip.label = lin4nms[y]
+	x <- cophenetic(tree)	
+	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
+	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
+	cruddat = merge(dat4[-162],lbi)
+	p <- ggtree(tree,layout='circular')
+	p <- p %<+% cruddat
+	plot(p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)))
+	mod <- kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat)
+	print(mod)
+}
+
+for(i in 1:100){
+	pvals <- sapply(10^log10tauvals, function(x) getp.tree(x,phi4_sample[[i]]) )
+	lines(log10tauvals,log10(pvals))
+
+}
 
