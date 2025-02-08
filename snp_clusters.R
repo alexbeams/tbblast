@@ -25,7 +25,7 @@ align4.dist <- dist.dna(align4,model='N')
 align1.clusters <- cutree(hclust(align1.dist),h=12)
 align2.clusters <- cutree(hclust(align2.dist),h=12)
 align3.clusters <- cutree(hclust(align3.dist),h=12)
-align4.clusters <- cutree(hclust(align4.dist),h=49)
+align4.clusters <- cutree(hclust(align4.dist),h=12)
 
 getPlot <- function(cutoff,align.dist,dat){
 

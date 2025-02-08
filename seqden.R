@@ -65,87 +65,7 @@ getseqden <- function(tree,tau){
 	return( seqden)
 }
 
-#logtaus <- seq(-3,3,length=60)
-#varseqdens.tree <- sapply(exp(logtaus), function(x) var(getseqden(tree,x)))
-#varseqdens.tree1 <- sapply(exp(logtaus), function(x) var(getseqden(tree1,x)))
-#varseqdens.tree2 <- sapply(exp(logtaus), function(x) var(getseqden(tree2,x)))
-#varseqdens.tree3 <- sapply(exp(logtaus), function(x) var(getseqden(tree3,x)))
-#varseqdens.tree4 <- sapply(exp(logtaus), function(x) var(getseqden(tree4,x)))
-#
-##rescale these for plotting
-#varseqdens.tree <- varseqdens.tree/max(varseqdens.tree) 
-#varseqdens.tree1 <- varseqdens.tree1/max(varseqdens.tree1) 
-#varseqdens.tree2 <- varseqdens.tree2/max(varseqdens.tree2) 
-#varseqdens.tree3 <- varseqdens.tree3/max(varseqdens.tree3) 
-#varseqdens.tree4 <- varseqdens.tree4/max(varseqdens.tree4) 
-#
-#jpeg(file='untimedtree_bandwidth_variance.jpeg',
-#	width=4,height=4,units='in',res=400)
-#plot(logtaus,varseqdens.tree1,col='red',type='l',
-#	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
-#	main='Untimed Trees',lty=1)
-#lines(logtaus,varseqdens.tree2,col='darkgreen',lty=2)
-#lines(logtaus,varseqdens.tree3,col='blue',lty=3)
-#lines(logtaus,varseqdens.tree4,col='purple',lty=4)
-#lines(logtaus,varseqdens.tree,col='black',lty=5)
-#legend('topright',legend=c(1,2,3,4,'All'),col=c('red','darkgreen','blue','purple','black'),
-#	title='Lineage',lty=c(1,2,3,4,5))
-#dev.off()
-#
-#varseqdens.timetree1 <- sapply(exp(logtaus), function(x) var(getseqden(timetree1,x)))
-#varseqdens.timetree2 <- sapply(exp(logtaus), function(x) var(getseqden(timetree2,x)))
-#varseqdens.timetree3 <- sapply(exp(logtaus), function(x) var(getseqden(timetree3,x)))
-#varseqdens.timetree4 <- sapply(exp(logtaus), function(x) var(getseqden(timetree4,x)))
-#
-##rescale these for plotting
-#varseqdens.timetree1 <- varseqdens.timetree1/max(varseqdens.timetree1) 
-#varseqdens.timetree2 <- varseqdens.timetree2/max(varseqdens.timetree2) 
-#varseqdens.timetree3 <- varseqdens.timetree3/max(varseqdens.timetree3) 
-#varseqdens.timetree4 <- varseqdens.timetree4/max(varseqdens.timetree4) 
-#
-#jpeg(file='timedtree_bandwidth_variance.jpeg',height=4,width=4,
-#	units='in',res=400)
-#plot(logtaus,varseqdens.timetree1,col='red',type='l',
-#	xlab=expression(log(tau)),ylab='Scaled variance in Sequence Density',
-#	main='Timed Trees',lty=1)
-#lines(logtaus,varseqdens.timetree2,col='darkgreen',lty=2)
-#lines(logtaus,varseqdens.timetree3,col='blue',lty=3)
-#lines(logtaus,varseqdens.timetree4,col='purple',lty=4)
-#legend('topright',legend=c(1,2,3,4),col=c('red','darkgreen','blue','purple'),
-#	title='Lineage',lty=c(1,2,3,4))
-#dev.off()
-#
-#
-#
-## find the optimal bandwidths
-#treeoptbw <- optimize(function(x){var(getseqden(tree,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#tree1optbw <- optimize(function(x){var(getseqden(tree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#tree2optbw <- optimize(function(x){var(getseqden(tree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#tree3optbw <- optimize(function(x){var(getseqden(tree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#tree4optbw <- optimize(function(x){var(getseqden(tree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#
-#timetree1optbw <- optimize(function(x){var(getseqden(timetree1,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#timetree2optbw <- optimize(function(x){var(getseqden(timetree2,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#timetree3optbw <- optimize(function(x){var(getseqden(timetree3,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#timetree4optbw <- optimize(function(x){var(getseqden(timetree4,exp(x)))},lower=-1,upper=1,maximum=TRUE)
-#
-#untimed_bws <- c(tree1optbw$maximum,tree2optbw$maximum,tree3optbw$maximum,tree4optbw$maximum,treeoptbw$maximum)
-#untimed_bws <- exp(untimed_bws)
-#
-#timed_bws <- c(timetree1optbw$maximum,timetree2optbw$maximum,timetree3optbw$maximum,timetree4optbw$maximum)
-#timed_bws <- exp(timed_bws)
-#
-## set bandwidth parameters
-#tau.tree1 <- untimed_bws[1] * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
-#tau.tree2 <- untimed_bws[2] * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
-#tau.tree3 <- untimed_bws[3] * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
-#tau.tree4 <- untimed_bws[4] * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
-#tau.tree <- untimed_bws[5] * mean(dist.tree[upper.tri(dist.tree,diag=F)])
-#
-#tau.timetree1 <- untimed_bws[1] * mean(dist.timetree1[upper.tri(dist.timetree1,diag=F)])
-#tau.timetree2 <- untimed_bws[2] * mean(dist.timetree2[upper.tri(dist.timetree2,diag=F)])
-#tau.timetree3 <- untimed_bws[3] * mean(dist.timetree3[upper.tri(dist.timetree3,diag=F)])
-#tau.timetree4 <- untimed_bws[4] * mean(dist.timetree4[upper.tri(dist.timetree4,diag=F)])
+
 #
 # these bandwidths are much too large; the bandwidth giving the most variance in lineage 4 is an averge
 # separation of 1000 years
@@ -1508,7 +1428,7 @@ getp.tree <- function(tau,tree){
 	cruddat = merge(dat4[-162],lbi)
 	mod <- aov(lbi~Drug.resistance.Tbprofiler,cruddat)
 	p = summary(mod)[[1]][,'Pr(>F)'][1]
-	return(p)
+	return(list(mod,cruddat))
 }
 
 log10tauvals <- seq(-5,5,length=30)
@@ -1517,17 +1437,29 @@ plot(log10tauvals,log10(pvals),ylim=c(-5,0))
 abline(h=log10(.05))
 abline(h=log10(5e-4),lty='dotted')
 
-plottree.lin4 <- function(tau,tree){
-	tree$tip.label = lin4nms[y]
+plottree <- function(tau,tree,dat){
 	x <- cophenetic(tree)	
 	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
 	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
-	cruddat = merge(dat4[-162],lbi)
+	cruddat = merge(dat[-162],lbi)
 	p <- ggtree(tree,layout='circular')
 	p <- p %<+% cruddat
 	plot(p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)))
 	mod <- kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat)
-	print(mod)
+	return(list(mod,cruddat))
+}
+
+plottree.lin4 <- function(tau,tree,dat){
+	tree$tip.label = lin4nms[y]
+	x <- cophenetic(tree)	
+	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
+	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
+	cruddat = merge(dat[-162],lbi)
+	p <- ggtree(tree,layout='circular')
+	p <- p %<+% cruddat
+	plot(p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)))
+	mod <- kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat)
+	return(list(mod,cruddat))
 }
 
 for(i in 1:100){
@@ -1535,4 +1467,51 @@ for(i in 1:100){
 	lines(log10tauvals,log10(pvals))
 
 }
+
+# let's try permuting the Drug.resistance.Tbprofiler values to see how often we see tiny p-values:
+plottree.lin4.drugpermute <- function(tau,tree){
+	tree$tip.label = lin4nms[y]
+	x <- cophenetic(tree)	
+	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
+	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
+	cruddat = merge(dat4[-162],lbi)
+	cruddat$Drug.resistance.Tbprofiler <- cruddat$Drug.resistance.Tbprofiler[sample(513)]	
+	p <- ggtree(tree,layout='circular')
+	p <- p %<+% cruddat
+	plot(p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)))
+	mod <- kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat)
+	print(mod)
+}
+
+# in 1000 simulations with tau=17, tree=phi4_sample[[1]], our observed p-value was still much smaller
+# than any p-value observed through randomly permuting Drug.resistance.Tbprofiler across the tips. 
+
+load('pvals_onetree_permute_Drug.Rdata')
+load('pvals_drug_100trees.Rdata')
+load('pvals_drug_permute_100trees.Rdata')
+
+hist(log10(pvals),xlim=c(-5,0),freq=F,ylim=c(0,5),breaks=40,xlab=bquote(log[10](p)), main='Kruskal-Wallis Test for LBI ~ Drug.resistance.Tbprofiler, Lineage 4')
+hist(log10(pvals_drug),add=T,col='blue',freq=F,breaks=20)
+hist(log10(pvals_permute),add=T,col='red',freq=F,breaks=20)
+legend('topleft',
+	legend=c('Permuted Drug.resistance.Tbprofiler 1000x across 1 tree',
+		'Permuted Drug.resistance.Tbprofiler across posterior sample 100 of trees',
+		'Observed values of Drug.resistance.Tbprofiler across posterior sample of 100 trees'),
+	col=c('gray','red','blue'),pch=19)
+
+
+# So far, all of our comparisons are one-way ANOVA; for Drug.resistance.Tbprofiler, the highly unequal 
+# group size motivate the use of the Kruskal-Wallis test (basically Wilcoxon Rank Sum test for more than
+# two different groups). Based on permuting the Drug.resistance.Tbprofiler variables across the tips,
+# it looks like we can confidently say that the clades that are clearly growing do not contain drug
+# resistance mutations. The next obvious candidate would be to examine x04fac_code and hivstatus, but
+# LBI does not appear to differ across hospitals or hivstatus at any timescale in the phylogeny 
+
+# 
+
+# two-way ANOVAs would be useful for considering interactions, but Drug.resistance.Tbprofiler is the only
+# variable that seems to be associated with LBI 
+
+
+
 
