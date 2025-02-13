@@ -27,6 +27,10 @@ align2.clusters <- cutree(hclust(align2.dist),h=12)
 align3.clusters <- cutree(hclust(align3.dist),h=12)
 align4.clusters <- cutree(hclust(align4.dist),h=12)
 
+# quick randomization test: if we permute Drug across sequences and look at snpclustersize, 
+# do we see the effect of Drug disappear? Yes, we do. 
+
+
 getPlot <- function(cutoff,align.dist,dat){
 
 	align.clusters <- cutree(hclust(align.dist),h=cutoff)
