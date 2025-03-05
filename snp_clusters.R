@@ -21,14 +21,21 @@ align2.dist <- dist.dna(align2,model='N')
 align3.dist <- dist.dna(align3,model='N')
 align4.dist <- dist.dna(align4,model='N')
 
+
+#pdf(file='lbi_cluster_figs/snp_dists.pdf',height=6,width=6)
+par(mfrow=c(2,2))
+plot(density(align1.dist),xlim=c(0,1200),main='Alignment 1',xlab='Pairwise SNP distance')
+plot(density(align2.dist),xlim=c(0,1200),main='Alignment 2',xlab='Pairwise SNP distance')
+plot(density(align3.dist),xlim=c(0,1200),main='Alignment 3',xlab='Pairwise SNP distance')
+plot(density(align4.dist),xlim=c(0,1200),main='Alignment 4',xlab='Pairwise SNP distance')
+#dev.off()
+
+
 # make clusters - use a SNP threshold of 12
 align1.clusters <- cutree(hclust(align1.dist),h=12)
 align2.clusters <- cutree(hclust(align2.dist),h=12)
 align3.clusters <- cutree(hclust(align3.dist),h=12)
 align4.clusters <- cutree(hclust(align4.dist),h=12)
-
-# quick randomization test: if we permute Drug across sequences and look at snpclustersize, 
-# do we see the effect of Drug disappear? Yes, we do. 
 
 
 getPlot <- function(cutoff,align.dist,dat){
@@ -44,149 +51,101 @@ getPlot <- function(cutoff,align.dist,dat){
 
 
 
-# probably need to read in the posterior distributions of trees in here:
-# refer to the bissemodels.R file
+# read in the posterior samples of trees in here:
+# generate a few samples to assess variabilityin maxtaus
 
 lin1phi <- read.nexus("lineage_files/beast_files/alignment1.beauti-alignment_lineage1.trees")
-phi1_sample <- sample(lin1phi,size=100)
+phi1_sample <- sample(lin1phi,size=200)
+phi1_sample2 <- sample(lin1phi,size=200)
+phi1_sample3 <- sample(lin1phi,size=200)
+phi1_sample4 <- sample(lin1phi,size=200)
+
 
 lin2phi <- read.nexus("lineage_files/beast_files/alignment2.beauti-alignment_lineage2.trees")
 phi2_sample <- sample(lin2phi,size=100)
+phi2_sample2 <- sample(lin2phi,size=100)
+phi2_sample3 <- sample(lin2phi,size=100)
+phi2_sample4 <- sample(lin2phi,size=100)
+
 
 lin3phi <- read.nexus("lineage_files/beast_files/alignment3.beauti-alignment_lineage3.trees")
 phi3_sample <- sample(lin3phi,size=100)
+phi3_sample2 <- sample(lin3phi,size=100)
+phi3_sample3 <- sample(lin3phi,size=100)
+phi3_sample4 <- sample(lin3phi,size=100)
 
 
+lin4phi <- read.nexus('lineage_4_delphy/alex/lineage4_delphy.trees')
+phi4_sample <- sample(lin4phi, 100)
+phi4_sample2 <- sample(lin4phi, 100)
+phi4_sample3 <- sample(lin4phi, 100)
+phi4_sample4 <- sample(lin4phi, 100)
 
-# choosing values of tau that give us clear separation among tips, and
-# that tell us something slightly more useful than just distinguishing tips
-# from internal nodes (as occurs when tau goes to zero):
-
-
-# does it look like LBI is telling a consistent story at the tips across trees in our posterior?
-
-#just plot lbi dist for each tip against the average lbi at each tip:
-
-# lineage 1: two clear groups distinguished:
-tau1 <- .008
-align1.lbi <- sapply(phi1_sample,function(x) lbi(x,tau1))
-
-align1.lbi.mean = apply(align1.lbi,1,mean)
-plot(align1.lbi.mean[1:99],align1.lbi.mean[1:99],
-	ylab='LBI from sampled trees',
-	xlab='Mean LBI')
-for(i in 1:100){points(align1.lbi.mean[1:99],align1.lbi[1:99,i])}
-points(align1.lbi.mean[1:99],align1.lbi.mean[1:99],col='red')
-
-mean(apply(align1.lbi,1,var))
-var(apply(align1.lbi,1,mean))
-
-var(apply(align1.lbi,1,mean)) / mean(apply(align1.lbi,1,var))
 
 # we want to maximize the F-test statistic over tau. Each tip is a group of observations with
 # as many observations as trees in the posterior sample; all groups have equal size, and
 # the degrees of freedom (numerator and denominator) are constant wrt tau, so this function
 # works fine for finding the optimal tau, although it isn't actually equal to the F-statistic 
 
-getF.align1 <- function(tau){
-	align1.lbi = sapply(phi1_sample,function(x) lbi(x,tau))
+getF.align1 <- function(tau,phi_sample){
+	align1.lbi = sapply(phi_sample,function(x) lbi(x,tau))
 	align1.lbi = align1.lbi[1:99,]	
 	F = var(apply(align1.lbi,1,mean)) / mean(apply(align1.lbi,1,var))
 	return(F)
 } 
 
-tauvals.align1 <- seq(.005,.01,length=15)
-F.align1 <- sapply(tauvals.align1, getF.align1)
-plot(tauvals.align1,F.align1,type='l',xlab=bquote(tau),ylab='F',
-	main='Lineage 1 LBI signal')
+tauvals.align1 <- seq(.002,.01,length=15)
+F.align1 <- sapply(tauvals.align1,function(x) getF.align1(x,phi1_sample))
+F.align1_2 <- sapply(tauvals.align1,function(x) getF.align1(x,phi1_sample2))
+F.align1_3 <- sapply(tauvals.align1,function(x) getF.align1(x,phi1_sample3))
+F.align1_4 <- sapply(tauvals.align1,function(x) getF.align1(x,phi1_sample4))
 
-# lineage 2: two clear groups distinguished:
-tau2 <- 5.25e-4
-align2.lbi <- sapply(phi2_sample,function(x) lbi(x,tau2))
 
-align2.lbi.mean = apply(align2.lbi,1,mean)
-plot(align2.lbi.mean[1:28],align2.lbi.mean[1:28],
-	xlab='Mean LBI',ylab='LBI from sampled trees')
-	#ylim=c(.003,.006),xlim=c(.003,.006))
-for(i in 1:100){points(align2.lbi.mean[1:28],align2.lbi[1:28,i])}
-points(align2.lbi.mean[1:28],align2.lbi.mean[1:28],col='red')
-
-mean(apply(align2.lbi,1,var))
-var(apply(align2.lbi,1,mean))
-
-var(apply(align2.lbi,1,mean)) / mean(apply(align2.lbi,1,var))
-
-getF.align2 <- function(tau){
-	align2.lbi = sapply(phi2_sample,function(x) lbi(x,tau))
+getF.align2 <- function(tau,phi_sample){
+	align2.lbi = sapply(phi_sample,function(x) lbi(x,tau))
 	align2.lbi = align2.lbi[1:28,]	
 	F = var(apply(align2.lbi,1,mean)) / mean(apply(align2.lbi,1,var))
 	return(F)
 } 
 
 tauvals.align2 <- seq(.00005,.001,length=15)
-F.align2 <- sapply(tauvals.align2, getF.align2)
-plot(tauvals.align2,F.align2,type='l',xlab=bquote(tau),ylab='F',
-	main='Alignment 2 LBI signal')
+F.align2 <- sapply(tauvals.align2, function(x) getF.align2(x,phi2_sample))
+F.align2_2 <- sapply(tauvals.align2, function(x) getF.align2(x,phi2_sample2))
+F.align2_3 <- sapply(tauvals.align2, function(x) getF.align2(x,phi2_sample3))
+F.align2_4 <- sapply(tauvals.align2, function(x) getF.align2(x,phi2_sample4))
 
 
-# lineage 3: two clear groups distinguished:
-tau3 <- .00155
-align3.lbi <- sapply(phi3_sample,function(x) lbi(x,tau3))
-
-align3.lbi.mean = apply(align3.lbi,1,mean)
-plot(align3.lbi.mean[1:61],align3.lbi.mean[1:61],
-	xlab='Mean LBI',
-	ylab='LBI from sampled trees')
-for(i in 1:100){points(align3.lbi.mean[1:61],align3.lbi[1:61,i])}
-points(align3.lbi.mean[1:61],align3.lbi.mean[1:61],col='red')
-
-mean(apply(align3.lbi,1,var))
-var(apply(align3.lbi,1,mean))
-
-var(apply(align3.lbi,1,mean)) / mean(apply(align3.lbi,1,var))
-
-getF.align3 <- function(tau){
-	align3.lbi = sapply(phi3_sample,function(x) lbi(x,tau))
+getF.align3 <- function(tau,phi_sample){
+	align3.lbi = sapply(phi_sample,function(x) lbi(x,tau))
 	align3.lbi = align3.lbi[1:61,]	
 	F = var(apply(align3.lbi,1,mean)) / mean(apply(align3.lbi,1,var))
 	return(F)
 }
 
 tauvals.align3 <- seq(.001,.003,length=15)
-F.align3 <- sapply(tauvals.align3, getF.align3)
-plot(tauvals.align3,F.align3,type='l',xlab=bquote(tau),ylab='F',
-	main='Alignment 3 LBI signal')
+F.align3 <- sapply(tauvals.align3, function(x) getF.align3(x,phi3_sample))
+F.align3_2 <- sapply(tauvals.align3, function(x) getF.align2(x,phi3_sample2))
+F.align3_3 <- sapply(tauvals.align3, function(x) getF.align2(x,phi3_sample3))
+F.align3_4 <- sapply(tauvals.align3, function(x) getF.align2(x,phi3_sample4))
 
-# lineage 4?
 
-lin4phi <- read.nexus('lineage_4_delphy/alex/lineage4_delphy.trees')
-
-phi4_sample <- sample(lin4phi, 100)
-
-# lineage 4
-tau4 <- 4.7
-align4.lbi <- sapply(phi4_sample,function(x) lbi(x,tau4))
-
-align4.lbi.mean = apply(align4.lbi,1,mean)
-plot(align4.lbi.mean[1:513],align4.lbi.mean[1:513],
-	xlab='Mean LBI',
-	ylab='LBI from sampled trees',
-	main=bquote(tau[4]==.(tau4)))
-for(i in 1:100){points(align4.lbi.mean[1:513],align4.lbi[1:513,i])}
-points(align4.lbi.mean[1:513],align4.lbi.mean[1:513],col='red')
-
-getF.align4 <- function(tau){
-	align4.lbi = sapply(phi4_sample,function(x) lbi(x,tau))
+getF.align4 <- function(tau,phi_sample){
+	align4.lbi = sapply(phi_sample,function(x) lbi(x,tau))
 	align4.lbi = align4.lbi[1:513,]	
 	F = var(apply(align4.lbi,1,mean)) / mean(apply(align4.lbi,1,var))
 	return(F)
 }
 
 tauvals.align4 <- seq(3,6,length=8)
-F.align4 <- sapply(tauvals.align4, getF.align4)
-plot(tauvals.align4,F.align4,type='l',xlab=bquote(tau),ylab='F',
-	main='Alignment 4 LBI signal')
+F.align4 <- sapply(tauvals.align4, function(x) getF.align4(x,phi4_sample))
+F.align4_2 <- sapply(tauvals.align4, function(x) getF.align2(x,phi4_sample2))
+F.align4_3 <- sapply(tauvals.align4, function(x) getF.align2(x,phi4_sample3))
+F.align4_4 <- sapply(tauvals.align4, function(x) getF.align2(x,phi4_sample4))
 
+
+# plot the signal-to-noise ratio of LBI for each lineage: Lineage 1 looks quite variable
+
+#pdf(file='lbi_cluster_figs/maxtaus.pdf',width=6,height=6)
 par(mfrow=c(2,2))
 plot(tauvals.align1,F.align1,type='l',xlab=bquote(tau),ylab='F',
 	main='Lineage 1 LBI signal-to-noise')
@@ -199,9 +158,72 @@ plot(tauvals.align3,F.align3,type='l',xlab=bquote(tau),ylab='F',
 
 plot(tauvals.align4,F.align4,type='l',xlab=bquote(tau),ylab='F',
 	main='Lineage 4 LBI signal-to-noise')
+#dev.off()
 
+# let's see how variable the signal-to-noise ratio curves are across the different samples:
+
+#pdf(file='lbi_cluster_figs/maxtaus_4samples.pdf',height=6,width=6)
 par(mfrow=c(2,2))
+plot(tauvals.align1,F.align1/max(F.align1),type='l',xlab=bquote(tau),ylab='F',
+	main='Lineage 1 LBI signal-to-noise')
+lines(tauvals.align1,F.align1_2/max(F.align1_2))
+lines(tauvals.align1,F.align1_3/max(F.align1_3))
+lines(tauvals.align1,F.align1_4/max(F.align1_4))
 
+plot(tauvals.align2,F.align2/max(F.align2),type='l',xlab=bquote(tau),ylab='F',
+	main='Lineage 2 LBI signal-to-noise',ylim=c(0,1))
+lines(tauvals.align2,F.align2_2/max(F.align2_2))
+lines(tauvals.align2,F.align2_3/max(F.align2_3))
+lines(tauvals.align2,F.align2_4/max(F.align2_4))
+
+plot(tauvals.align3,F.align3/max(F.align3),type='l',xlab=bquote(tau),ylab='F',
+	main='Lineage 3 LBI signal-to-noise',ylim=c(0,1))
+lines(tauvals.align3,F.align3_2/max(F.align3_2))
+lines(tauvals.align3,F.align3_3/max(F.align3_3))
+lines(tauvals.align3,F.align3_4/max(F.align3_4))
+
+plot(tauvals.align4,F.align4/max(F.align4),type='l',xlab=bquote(tau),ylab='F',
+	main='Lineage 4 LBI signal-to-noise',ylim=c(0,1))
+lines(tauvals.align4,F.align4_2/max(F.align4_2))
+lines(tauvals.align4,F.align4_3/max(F.align4_3))
+lines(tauvals.align4,F.align4_4/max(F.align4_4))
+#dev.off()
+
+# calculate LBI for each tree using tau values close to optimum for each lineage:
+
+tau1 <- .008
+align1.lbi <- sapply(phi1_sample,function(x) lbi(x,tau1))
+align1.lbi.mean = apply(align1.lbi,1,mean)
+
+tau2 <- 5.25e-4
+align2.lbi <- sapply(phi2_sample,function(x) lbi(x,tau2))
+align2.lbi.mean = apply(align2.lbi,1,mean)
+
+tau3 <- .00155
+align3.lbi <- sapply(phi3_sample,function(x) lbi(x,tau3))
+align3.lbi.mean = apply(align3.lbi,1,mean)
+
+tau4 <- 4.7
+align4.lbi <- sapply(phi4_sample,function(x) lbi(x,tau4))
+align4.lbi.mean = apply(align4.lbi,1,mean)
+
+# let's also check the variance in this for alignment 1:
+align1.lbi_2 <- sapply(phi1_sample2,function(x) lbi(x,tau1))
+align1.lbi.mean_2 = apply(align1.lbi_2,1,mean)
+
+align1.lbi_3 <- sapply(phi1_sample3,function(x) lbi(x,tau1))
+align1.lbi.mean_3 = apply(align1.lbi_3,1,mean)
+
+align1.lbi_4 <- sapply(phi1_sample4,function(x) lbi(x,tau1))
+align1.lbi.mean_4 = apply(align1.lbi_4,1,mean)
+
+
+
+
+# plot LBI~average for each lineage:
+
+#pdf(file='lbi_cluster_figs/posterior_relationships.pdf',width=6,height=6)
+par(mfrow=c(2,2))
 plot(align1.lbi.mean[1:99],align1.lbi.mean[1:99],
 	ylab='LBI from sampled trees',
 	xlab='Mean LBI',
@@ -231,6 +253,43 @@ plot(align4.lbi.mean[1:513],align4.lbi.mean[1:513],
 for(i in 1:100){points(align4.lbi.mean[1:513],align4.lbi[1:513,i])}
 points(align4.lbi.mean[1:513],align4.lbi.mean[1:513],col='red')
 
+#dev.off()
+
+
+# look at the variability for alignment 1: Seems to be doing fine here...
+
+par(mfrow=c(2,2))
+
+plot(align1.lbi.mean[1:99],align1.lbi.mean[1:99],
+	ylab='LBI from sampled trees',
+	xlab='Mean LBI',
+	main=bquote(tau[1]==.(tau1)))
+for(i in 1:100){points(align1.lbi.mean[1:99],align1.lbi[1:99,i])}
+points(align1.lbi.mean[1:99],align1.lbi.mean[1:99],col='red')
+
+plot(align1.lbi.mean_2[1:99],align1.lbi.mean_2[1:99],
+	ylab='LBI from sampled trees',
+	xlab='Mean LBI',
+	main=bquote(tau[1]==.(tau1)))
+for(i in 1:100){points(align1.lbi.mean_2[1:99],align1.lbi_2[1:99,i])}
+points(align1.lbi.mean_2[1:99],align1.lbi.mean_2[1:99],col='red')
+
+plot(align1.lbi.mean_3[1:99],align1.lbi.mean_3[1:99],
+	ylab='LBI from sampled trees',
+	xlab='Mean LBI',
+	main=bquote(tau[1]==.(tau1)))
+for(i in 1:100){points(align1.lbi.mean_3[1:99],align1.lbi_3[1:99,i])}
+points(align1.lbi.mean_3[1:99],align1.lbi.mean_3[1:99],col='red')
+
+plot(align1.lbi.mean_4[1:99],align1.lbi.mean_4[1:99],
+	ylab='LBI from sampled trees',
+	xlab='Mean LBI',
+	main=bquote(tau[1]==.(tau1)))
+for(i in 1:100){points(align1.lbi.mean_4[1:99],align1.lbi_4[1:99,i])}
+points(align1.lbi.mean_4[1:99],align1.lbi.mean_4[1:99],col='red')
+
+
+
 # need to read in dat, separate into dat1, dat2, dat3, dat4, then:
 
 crud= data.frame(Sequence_name=names(align4.clusters), snpcluster = align4.clusters)
@@ -239,99 +298,8 @@ df$snpclustersize = table(df$snpcluster)[df$snpcluster]
 
 plot(lbi~as.double(snpclustersize),df)
 
-# what SNP cutoff establishes the clearest relationship between clustersize and lbi?
-# same trick as before: calculate E[ lbi | clustersize ], and choose cutoff so that
-# Var[ E[lbi|clustersize]] >> E[Var[lbi|clustersize]]
-# for this, we do want to be careful about correctly calculating Snedecor's F, because
-# the numbers in each group of clustersize will change with the threshold
-# we use the aov function this time:
 
-getF.snpclustersize.align1 <- function(cutoff){
-
-	align1.clusters <- cutree(hclust(align1.dist),h=cutoff)
-	crud= data.frame(Sequence_name=names(align1.clusters), snpcluster = align1.clusters)
-	df = merge(dat1, crud)
-	df$snpclustersize = table(df$snpcluster)[df$snpcluster]
-
-	aovmod <- aov(lbi~as.double(snpclustersize),df)
-	F.snpclustersize <- summary(aovmod)[[1]][["F value"]][[1]]
-	p.snpclustersize <- summary(aovmod)[[1]][["Pr(>F)"]][[1]]
-		
-	return(c(F.snpclustersize, p.snpclustersize))
-
-}
-
-getF.snpclustersize.align2 <- function(cutoff){
-
-	align2.clusters <- cutree(hclust(align2.dist),h=cutoff)
-	crud= data.frame(Sequence_name=names(align2.clusters), snpcluster = align2.clusters)
-	df = merge(dat2, crud)
-	df$snpclustersize = table(df$snpcluster)[df$snpcluster]
-
-	aovmod <- aov(lbi~as.double(snpclustersize),df)
-	F.snpclustersize <- summary(aovmod)[[1]][["F value"]][[1]]
-	p.snpclustersize <- summary(aovmod)[[1]][["Pr(>F)"]][[1]]
-		
-	return(c(F.snpclustersize, p.snpclustersize))
-
-}
-
-getF.snpclustersize.align3 <- function(cutoff){
-
-	align3.clusters <- cutree(hclust(align3.dist),h=cutoff)
-	crud= data.frame(Sequence_name=names(align3.clusters), snpcluster = align3.clusters)
-	df = merge(dat3, crud)
-	df$snpclustersize = table(df$snpcluster)[df$snpcluster]
-
-	aovmod <- aov(lbi~as.double(snpclustersize),df)
-	F.snpclustersize <- summary(aovmod)[[1]][["F value"]][[1]]
-	p.snpclustersize <- summary(aovmod)[[1]][["Pr(>F)"]][[1]]
-		
-	return(c(F.snpclustersize, p.snpclustersize))
-
-}
-
-
-getF.snpclustersize.align4 <- function(cutoff){
-
-	align4.clusters <- cutree(hclust(align4.dist),h=cutoff)
-	crud= data.frame(Sequence_name=names(align4.clusters), snpcluster = align4.clusters)
-	df = merge(dat4, crud)
-	df$snpclustersize = table(df$snpcluster)[df$snpcluster]
-
-	aovmod <- aov(lbi~as.double(snpclustersize),df)
-	F.snpclustersize <- summary(aovmod)[[1]][["F value"]][[1]]
-	p.snpclustersize <- summary(aovmod)[[1]][["Pr(>F)"]][[1]]
-		
-	return(c(F.snpclustersize, p.snpclustersize))
-
-}
-
-cutoffs <- 10:100
-F.snpclustersizes.align1 <- sapply(cutoffs, getF.snpclustersize.align1)
-par(mfrow=c(2,1))
-plot(cutoffs,F.snpclustersizes.align1[1,],xlab='SNP threshold', ylab='F',main='Lineage 1')
-plot(cutoffs,log(F.snpclustersizes.align1[2,]),xlab='SNP threshold', ylab='log p-value')
-
-cutoffs <- 10:100
-F.snpclustersizes.align2 <- sapply(cutoffs, getF.snpclustersize.align2)
-par(mfrow=c(2,1))
-plot(cutoffs,F.snpclustersizes.align2[1,],xlab='SNP threshold', ylab='F',main='Lineage 2')
-plot(cutoffs,log(F.snpclustersizes.align2[2,]),xlab='SNP threshold', ylab='log p-value')
-
-cutoffs <- 10:100
-F.snpclustersizes.align3 <- sapply(cutoffs, getF.snpclustersize.align3)
-par(mfrow=c(2,1))
-plot(cutoffs,F.snpclustersizes.align3[1,],xlab='SNP threshold', ylab='F',main='Lineage 3')
-plot(cutoffs,log(F.snpclustersizes.align3[2,]),xlab='SNP threshold', ylab='log p-value')
-
-cutoffs <- 10:100
-F.snpclustersizes.align4 <- sapply(cutoffs, getF.snpclustersize.align4)
-par(mfrow=c(2,1))
-plot(cutoffs,F.snpclustersizes.align4[1,],xlab='SNP threshold', ylab='F',main='Lineage 4')
-plot(cutoffs,log(F.snpclustersizes.align4[2,]),xlab='SNP threshold', ylab='log p-value')
-
-# lineage 1: looks kind of pathological. LBI seems to just single out the distance sequences from the rest
+# lineage 1: looks kind of pathological. LBI seems to just single out the distant sequences from the rest
 # lineage 2: SNP thresholds of 15-26 establish the strongest correlation with LBI
 # lineage 3: similar to lineage 1, looks pathological.  
 # lineage 4: looks like any cutoff between 32 and 50, inclusive, establishes the strongest relationsip with LBI for lineage 4

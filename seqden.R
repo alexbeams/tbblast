@@ -6,7 +6,6 @@ rm(list=ls())
 library(ape)
 library(ggplot2)
 library(ggtree)
-#library(Biostrings)
 library(RColorBrewer)
 library(gridExtra)
 library(lme4)
@@ -37,92 +36,93 @@ lin3nms <- tree3$tip.label
 lin4nms <- tree4$tip.label
 linMbovnms <- treeMbovis$tip.label
 
-timetree1 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage1_results/timetree.nexus')
-timetree2 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage2_results/timetree.nexus')
-timetree3 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage3_results/timetree.nexus')
-timetree4 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage4_results/timetree.nexus')
-timetreeMbovis <- ape::read.nexus('constant_site_correction_kimura/treetime_lineageMbovis_results/timetree.nexus')
 
-# calculate the patristic distances
-dist.tree1 <- dist.nodes(tree1)
-dist.tree2 <- dist.nodes(tree2)
-dist.tree3 <- dist.nodes(tree3)
-dist.tree4 <- dist.nodes(tree4)
-
-# also for the ML tree with all of the lineages:
-dist.tree <- dist.nodes(tree)
-
-dist.timetree1 <- dist.nodes(timetree1)
-dist.timetree2 <- dist.nodes(timetree2)
-dist.timetree3 <- dist.nodes(timetree3)
-dist.timetree4 <- dist.nodes(timetree4)
-
-# what tau values produce the most variance in the sequence density?
-getseqden <- function(tree,tau){
-	treedist <- dist.nodes(tree)
-	tau <- tau * mean(treedist[upper.tri(treedist,diag=F)])	
-	seqden <- apply(treedist,1,function(x) sum(exp(-x/tau)) )
-	return( seqden)
-}
-
-
+#timetree1 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage1_results/timetree.nexus')
+#timetree2 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage2_results/timetree.nexus')
+#timetree3 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage3_results/timetree.nexus')
+#timetree4 <- ape::read.nexus('constant_site_correction_kimura/treetime_lineage4_results/timetree.nexus')
+#timetreeMbovis <- ape::read.nexus('constant_site_correction_kimura/treetime_lineageMbovis_results/timetree.nexus')
 #
-# these bandwidths are much too large; the bandwidth giving the most variance in lineage 4 is an averge
-# separation of 1000 years
-tau.timetree1 <- 5
-tau.timetree2 <- 5
-tau.timetree3 <- 5
-tau.timetree4 <- 5 # modify to look at 5, 50, and 500
-
-# no idea what the bandwidths for untimed trees should be; probably don't even want to use
-# the untimed trees
-tau.tree1 <- 0.0625 * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
-tau.tree2 <- 0.0625 * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
-tau.tree3 <- 0.0625 * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
-tau.tree4 <- 0.0625 * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
-tau.tree <- 0.0625 * mean(dist.tree[upper.tri(dist.tree,diag=F)])
-
-# calculate the genome densities using exp(-d/tau)
-seqden.tree <- apply(dist.tree, 1, function(x) sum(exp(-x/tau.tree)) )
-
-seqden.tree1 <- apply(dist.tree1, 1, function(x) sum(exp(-x/tau.tree1)) )
-seqden.tree2 <- apply(dist.tree2, 1, function(x) sum(exp(-x/tau.tree2)) )
-seqden.tree3 <- apply(dist.tree3, 1, function(x) sum(exp(-x/tau.tree3)) )
-seqden.tree4 <- apply(dist.tree4, 1, function(x) sum(exp(-x/tau.tree4)) )
-
-
-#modifying to include different bandwidths here: using tau=5, 50, 500 for each:
-seqdenlow.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/5)) )
-seqdenmed.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/50)) )
-seqdenhigh.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/500)) )
-
-seqdenlow.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/5)) )
-seqdenmed.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/50)) )
-seqdenhigh.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/500)) )
-
-seqdenlow.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/5)) )
-seqdenmed.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/50)) )
-seqdenhigh.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/500)) )
-
-seqdenlow.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/5)) )
-seqdenmed.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/50)) )
-seqdenhigh.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/500)) )
-
-#seqden.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/tau.timetree2)) )
-#seqden.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/tau.timetree3)) )
-#seqden.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/tau.timetree4)) )
-
-#need to assign labels to the internal nodes of the trees:
-tree$node.label <- paste0('node',1:tree$Nnode)
-tree1$node.label <- paste0('node',1:tree1$Nnode)
-tree2$node.label <- paste0('node',1:tree2$Nnode)
-tree3$node.label <- paste0('node',1:tree3$Nnode)
-tree4$node.label <- paste0('node',1:tree4$Nnode)
-
-timetree1$node.label <- paste0('node',1:timetree1$Nnode)
-timetree2$node.label <- paste0('node',1:timetree2$Nnode)
-timetree3$node.label <- paste0('node',1:timetree3$Nnode)
-timetree4$node.label <- paste0('node',1:timetree4$Nnode)
+## calculate the patristic distances
+#dist.tree1 <- dist.nodes(tree1)
+#dist.tree2 <- dist.nodes(tree2)
+#dist.tree3 <- dist.nodes(tree3)
+#dist.tree4 <- dist.nodes(tree4)
+#
+## also for the ML tree with all of the lineages:
+#dist.tree <- dist.nodes(tree)
+#
+#dist.timetree1 <- dist.nodes(timetree1)
+#dist.timetree2 <- dist.nodes(timetree2)
+#dist.timetree3 <- dist.nodes(timetree3)
+#dist.timetree4 <- dist.nodes(timetree4)
+#
+## what tau values produce the most variance in the sequence density?
+#getseqden <- function(tree,tau){
+#	treedist <- dist.nodes(tree)
+#	tau <- tau * mean(treedist[upper.tri(treedist,diag=F)])	
+#	seqden <- apply(treedist,1,function(x) sum(exp(-x/tau)) )
+#	return( seqden)
+#}
+#
+#
+##
+## these bandwidths are much too large; the bandwidth giving the most variance in lineage 4 is an averge
+## separation of 1000 years
+#tau.timetree1 <- 5
+#tau.timetree2 <- 5
+#tau.timetree3 <- 5
+#tau.timetree4 <- 5 # modify to look at 5, 50, and 500
+#
+## no idea what the bandwidths for untimed trees should be; probably don't even want to use
+## the untimed trees
+#tau.tree1 <- 0.0625 * mean(dist.tree1[upper.tri(dist.tree1,diag=F)])
+#tau.tree2 <- 0.0625 * mean(dist.tree2[upper.tri(dist.tree2,diag=F)])
+#tau.tree3 <- 0.0625 * mean(dist.tree3[upper.tri(dist.tree3,diag=F)])
+#tau.tree4 <- 0.0625 * mean(dist.tree4[upper.tri(dist.tree4,diag=F)])
+#tau.tree <- 0.0625 * mean(dist.tree[upper.tri(dist.tree,diag=F)])
+#
+## calculate the genome densities using exp(-d/tau)
+#seqden.tree <- apply(dist.tree, 1, function(x) sum(exp(-x/tau.tree)) )
+#
+#seqden.tree1 <- apply(dist.tree1, 1, function(x) sum(exp(-x/tau.tree1)) )
+#seqden.tree2 <- apply(dist.tree2, 1, function(x) sum(exp(-x/tau.tree2)) )
+#seqden.tree3 <- apply(dist.tree3, 1, function(x) sum(exp(-x/tau.tree3)) )
+#seqden.tree4 <- apply(dist.tree4, 1, function(x) sum(exp(-x/tau.tree4)) )
+#
+#
+##modifying to include different bandwidths here: using tau=5, 50, 500 for each:
+#seqdenlow.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/5)) )
+#seqdenmed.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/50)) )
+#seqdenhigh.timetree1 <- apply(dist.timetree1, 1, function(x) sum(exp(-x/500)) )
+#
+#seqdenlow.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/5)) )
+#seqdenmed.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/50)) )
+#seqdenhigh.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/500)) )
+#
+#seqdenlow.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/5)) )
+#seqdenmed.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/50)) )
+#seqdenhigh.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/500)) )
+#
+#seqdenlow.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/5)) )
+#seqdenmed.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/50)) )
+#seqdenhigh.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/500)) )
+#
+##seqden.timetree2 <- apply(dist.timetree2, 1, function(x) sum(exp(-x/tau.timetree2)) )
+##seqden.timetree3 <- apply(dist.timetree3, 1, function(x) sum(exp(-x/tau.timetree3)) )
+##seqden.timetree4 <- apply(dist.timetree4, 1, function(x) sum(exp(-x/tau.timetree4)) )
+#
+##need to assign labels to the internal nodes of the trees:
+#tree$node.label <- paste0('node',1:tree$Nnode)
+#tree1$node.label <- paste0('node',1:tree1$Nnode)
+#tree2$node.label <- paste0('node',1:tree2$Nnode)
+#tree3$node.label <- paste0('node',1:tree3$Nnode)
+#tree4$node.label <- paste0('node',1:tree4$Nnode)
+#
+#timetree1$node.label <- paste0('node',1:timetree1$Nnode)
+#timetree2$node.label <- paste0('node',1:timetree2$Nnode)
+#timetree3$node.label <- paste0('node',1:timetree3$Nnode)
+#timetree4$node.label <- paste0('node',1:timetree4$Nnode)
 
 # load in the posterior trees for the different lineages, and calculate the average LBI for each
 
@@ -170,51 +170,49 @@ align4.lbi.mean <- align4.lbi.mean[crudnms]
 names(align4.lbi.mean) <- lin4nms
 
 
-df.tree1 <- data.frame(Sequence_name = c(tree1$tip.label,tree1$node.label),
-	seqden=seqden.tree1)
-
-df.tree2 <- data.frame(Sequence_name = c(tree2$tip.label,tree2$node.label),
-	seqden=seqden.tree2)
-
-df.tree3 <- data.frame(Sequence_name = c(tree3$tip.label,tree3$node.label),
-	seqden=seqden.tree3)
-
-df.tree4 <- data.frame(Sequence_name = c(tree4$tip.label,tree4$node.label),
-	seqden=seqden.tree4)
-
-df.timetree1 <- data.frame(Sequence_name = c(timetree1$tip.label,timetree1$node.label),
-	seqdenlow=seqdenlow.timetree1,
-	seqdenmed=seqdenmed.timetree1,
-	seqdenhigh=seqdenhigh.timetree1)
-
-df.timetree2 <- data.frame(Sequence_name = c(timetree2$tip.label,timetree2$node.label),
-	seqdenlow=seqdenlow.timetree2,
-	seqdenmed=seqdenmed.timetree2,
-	seqdenhigh=seqdenhigh.timetree2)
-
-df.timetree3 <- data.frame(Sequence_name = c(timetree3$tip.label,timetree3$node.label),
-	seqdenlow=seqdenlow.timetree3,
-	seqdenmed=seqdenmed.timetree3,
-	seqdenhigh=seqdenhigh.timetree3)
-
-df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.label),
-	seqdenlow=seqdenlow.timetree4,
-	seqdenmed=seqdenmed.timetree4,
-	seqdenhigh=seqdenhigh.timetree4)
-
-# merge the LBI values into these data frames
-crud = data.frame(Sequence_name = names(align1.lbi.mean), lbi=align1.lbi.mean)
-df.timetree1 = merge(df.timetree1, crud,all=T)
-
-crud = data.frame(Sequence_name = names(align2.lbi.mean), lbi=align2.lbi.mean)
-df.timetree2 = merge(df.timetree2, crud,all=T)
-
-crud = data.frame(Sequence_name = names(align3.lbi.mean), lbi=align3.lbi.mean)
-df.timetree3 = merge(df.timetree3, crud, all=T)
-
-crud = data.frame(Sequence_name = names(align4.lbi.mean), lbi=align4.lbi.mean)
-df.timetree4 = merge(df.timetree4, crud, all=T)
-
+#df.tree1 <- data.frame(Sequence_name = c(tree1$tip.label,tree1$node.label),
+#	lbi=seqden.tree1)
+#
+#df.tree2 <- data.frame(Sequence_name = c(tree2$tip.label,tree2$node.label),
+#	lbi=seqden.tree2)
+#
+#df.tree3 <- data.frame(Sequence_name = c(tree3$tip.label,tree3$node.label),
+#	lbi=seqden.tree3)
+#
+#df.tree4 <- data.frame(Sequence_name = c(tree4$tip.label,tree4$node.label),
+#	lbi=seqden.tree4)
+#
+#df.timetree1 <- data.frame(Sequence_name = c(timetree1$tip.label,timetree1$node.label),
+#	lbi = align1.lbi.mean)
+#
+#df.timetree2 <- data.frame(Sequence_name = c(timetree2$tip.label,timetree2$node.label),
+#	lbi = align2.lbi.mean)
+#
+#df.timetree3 <- data.frame(Sequence_name = c(timetree3$tip.label,timetree3$node.label),
+#	seqdenlow=seqdenlow.timetree3,
+#	seqdenmed=seqdenmed.timetree3,
+#	seqdenhigh=seqdenhigh.timetree3)
+#
+#df.timetree4 <- data.frame(Sequence_name = c(timetree4$tip.label,timetree4$node.label),
+#	seqdenlow=seqdenlow.timetree4,
+#	seqdenmed=seqdenmed.timetree4,
+#	seqdenhigh=seqdenhigh.timetree4)
+#
+#
+## merge the LBI values into these data frames
+#
+#crud = data.frame(Sequence_name = names(align1.lbi.mean), lbi=align1.lbi.mean)
+#df.timetree1 = merge(df.timetree1, crud,all=T)
+#
+#crud = data.frame(Sequence_name = names(align2.lbi.mean), lbi=align2.lbi.mean)
+#df.timetree2 = merge(df.timetree2, crud,all=T)
+#
+#crud = data.frame(Sequence_name = names(align3.lbi.mean), lbi=align3.lbi.mean)
+#df.timetree3 = merge(df.timetree3, crud, all=T)
+#
+#crud = data.frame(Sequence_name = names(align4.lbi.mean), lbi=align4.lbi.mean)
+#df.timetree4 = merge(df.timetree4, crud, all=T)
+#
 #df.timetree3 <- data.frame(Sequence_name = c(timetree3$tip.label,timetree3$node.label),
 #	seqden=seqden.timetree3)
 
@@ -224,27 +222,29 @@ df.timetree4 = merge(df.timetree4, crud, all=T)
 # look at some other functions of distance as well, e.g. variance
 #df.tree$var <- apply(dist.tree, 1, var)
 
-df.tree1$var <- apply(dist.tree1, 1, var)
-df.tree2$var <- apply(dist.tree2, 1, var)
-df.tree3$var <- apply(dist.tree3, 1, var)
-df.tree4$var <- apply(dist.tree4, 1, var)
+#df.tree1$var <- apply(dist.tree1, 1, var)
+#df.tree2$var <- apply(dist.tree2, 1, var)
+#df.tree3$var <- apply(dist.tree3, 1, var)
+#df.tree4$var <- apply(dist.tree4, 1, var)
+#
+#df.timetree1$var <- apply(dist.timetree1, 1, var)
+#df.timetree2$var <- apply(dist.timetree2, 1, var)
+#df.timetree3$var <- apply(dist.timetree3, 1, var)
+#df.timetree4$var <- apply(dist.timetree4, 1, var)
+#
+##df.tree$mean <- apply(dist.tree, 1, mean)
+#
+#df.tree1$mean <- apply(dist.tree1, 1, mean)
+#df.tree2$mean <- apply(dist.tree2, 1, mean)
+#df.tree3$mean <- apply(dist.tree3, 1, mean)
+#df.tree4$mean <- apply(dist.tree4, 1, mean)
+#
+#df.timetree1$mean <- apply(dist.timetree1, 1, mean)
+#df.timetree2$mean <- apply(dist.timetree2, 1, mean)
+#df.timetree3$mean <- apply(dist.timetree3, 1, mean)
+#df.timetree4$mean <- apply(dist.timetree4, 1, mean)
 
-df.timetree1$var <- apply(dist.timetree1, 1, var)
-df.timetree2$var <- apply(dist.timetree2, 1, var)
-df.timetree3$var <- apply(dist.timetree3, 1, var)
-df.timetree4$var <- apply(dist.timetree4, 1, var)
 
-#df.tree$mean <- apply(dist.tree, 1, mean)
-
-df.tree1$mean <- apply(dist.tree1, 1, mean)
-df.tree2$mean <- apply(dist.tree2, 1, mean)
-df.tree3$mean <- apply(dist.tree3, 1, mean)
-df.tree4$mean <- apply(dist.tree4, 1, mean)
-
-df.timetree1$mean <- apply(dist.timetree1, 1, mean)
-df.timetree2$mean <- apply(dist.timetree2, 1, mean)
-df.timetree3$mean <- apply(dist.timetree3, 1, mean)
-df.timetree4$mean <- apply(dist.timetree4, 1, mean)
 
 # load in the metadata and the lineage/drug resistance data
 drugdat <- read.csv('Malawi_final_stats.csv')
@@ -260,6 +260,14 @@ blast <- read_excel('BLAST.xls')
 
 # each of dat and blast has pid's that are not in the other (551 in common)
 dat <- merge(dat, blast[,c('pid','cluster')], all.x=T)
+
+# add in the LBI values calculated from the posterior distributions of trees:
+
+lbidat = data.frame(Sequence_name = names(c(align1.lbi.mean, align2.lbi.mean, align3.lbi.mean, align4.lbi.mean)), 
+	lbi = c(align1.lbi.mean, align2.lbi.mean, align3.lbi.mean, align4.lbi.mean) )
+
+dat = merge(dat,lbidat)
+
 
 
 # create some convenient names for groups of variables
@@ -313,8 +321,6 @@ demnms <- c('sex','age','agegroup','ageest')
 # abx resistance info - second two appear redundant
 resnms <- c('Drug.resistance.Tbprofiler')
 
-# not sure what this one is - it's different from 'outcome'
-huhnms <- c('outcome_success')
 
 # the remaining columns are the sequence name, the ward ID, the outcome of treatment,
 #	datecreated (differs from x05regdate) and Major.Lineage:
@@ -1438,10 +1444,13 @@ abline(h=log10(.05))
 abline(h=log10(5e-4),lty='dotted')
 
 plottree <- function(tau,tree,dat){
-	x <- cophenetic(tree)	
-	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
-	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
-	cruddat = merge(dat[-162],lbi)
+	#x <- cophenetic(tree)	
+	#lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
+	#lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
+	lbival = lbi(tree,tau)
+	lbival = lbival[1:length(tree$tip.label)]
+	lbival = data.frame(Sequence_name=tree$tip.label, lbi=lbival)
+	cruddat = merge(dat[,setdiff(colnames(dat),'lbi') ],lbival)
 	p <- ggtree(tree,layout='circular')
 	p <- p %<+% cruddat
 	plot(p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)))
@@ -1450,23 +1459,37 @@ plottree <- function(tau,tree,dat){
 }
 
 plottree.lin4 <- function(tau,tree,dat){
-	tree$tip.label = lin4nms[y]
-	x <- cophenetic(tree)	
-	lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
-	lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
-	cruddat = merge(dat[-162],lbi)
+	y <- sapply(tree$tip.label, function(x) grep(x, lin4nms) )
+	tree$tip.label = lin4nms[y]	
+	
+	#x <- cophenetic(tree)	
+	#lbi = apply(x, 1, function(x) sum(exp(-x/tau)) )
+	#lbi = data.frame(Sequence_name=names(lbi),lbi=lbi)	
+	#cruddat = merge(dat[-162],lbi)
+	
+	lbival = lbi(tree,tau)
+	lbival = lbival[1:length(tree$tip.label)]
+	lbival = data.frame(Sequence_name=tree$tip.label, lbi=lbival)
+	cruddat = merge(dat[,setdiff(colnames(dat),'lbi') ],lbival)
+
+	# include a new variable for quantiles
+	cruddat$quants = cruddat$lbi > quantile(cruddat$lbi, .75)	
+	
 	p <- ggtree(tree,layout='circular')
 	p <- p %<+% cruddat
-	plot(p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)))
+	#plot(p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)))
+	plot(p + geom_tippoint(aes(col=quants)))
 	mod <- kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat)
 	return(list(mod,cruddat))
 }
 
-for(i in 1:100){
-	pvals <- sapply(10^log10tauvals, function(x) getp.tree(x,phi4_sample[[i]]) )
-	lines(log10tauvals,log10(pvals))
+p <- plottree.lin4(tau4,phi4_sample[[1]],dat)
 
-}
+#for(i in 1:100){
+#	pvals <- sapply(10^log10tauvals, function(x) getp.tree(x,phi4_sample[[i]]) )
+#	lines(log10tauvals,log10(pvals))
+#
+#}
 
 # let's try permuting the Drug.resistance.Tbprofiler values to see how often we see tiny p-values:
 plottree.lin4.drugpermute <- function(tau,tree){
@@ -1507,11 +1530,85 @@ legend('topleft',
 # resistance mutations. The next obvious candidate would be to examine x04fac_code and hivstatus, but
 # LBI does not appear to differ across hospitals or hivstatus at any timescale in the phylogeny 
 
-# 
-
-# two-way ANOVAs would be useful for considering interactions, but Drug.resistance.Tbprofiler is the only
-# variable that seems to be associated with LBI 
 
 
 
+# let's zoom in on some of these individual clades:
+tree = phi4_sample[[1]]
+tau = tau4
+
+# just going to do this interactively. ggtree is pretty temperamental - using the base plot function
+
+plot(tree, type='fan',show.tip.label=F)
+clade1 <- extract.clade(tree, interactive=T)
+
+plot(tree, type='fan',show.tip.label=F)
+clade2 <- extract.clade(tree, interactive=T)
+
+plot(tree, type='fan',show.tip.label=F)
+clade3 <- extract.clade(tree, interactive=T)
+
+plot(tree, type='fan',show.tip.label=F)
+clade4 <- extract.clade(tree, interactive=T)
+
+# load these into a dataframe:
+z = c(clade1$tip.label, clade2$tip.label, clade3$tip.label, clade4$tip.label)
+
+clades = data.frame(Sequence_name = z, clade = rep(1:4, 
+	c(length(clade1$tip.label), length(clade2$tip.label), length(clade3$tip.label), length(clade4$tip.label) ))) 
+
+cruddat= merge(dat, clades)
+
+p <- ggtree(tree, layout='circular')
+p <- p %<+% cruddat
+
+#pdf(file='lbi_cluster_figs/lineage4_clade_circle.pdf',height=6,width=6)
+p + geom_tippoint(aes(col=factor(clade) ))
+#dev.off()
+
+# make a plot just of clade 1
+p1 <- ggtree(clade1) %<+% cruddat
+p1 <- p1 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi))
+
+# make a plot just of clade 2
+p2 <- ggtree(clade2) %<+% cruddat
+p2 <- p2 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi))
+
+# make a plot just of clade 3
+p3 <- ggtree(clade3) %<+% cruddat
+p3 <- p3 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)) + scale_color_manual(values='#619CFF')
+
+# make a plot just of clade 4
+p4 <- ggtree(clade4) %<+% cruddat
+p4 <- p4 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi))
+
+
+require(cowplot)
+
+#pdf(file='lbi_cluster_figs/lineage4clades.pdf',height=12,width=12)
+plot_grid(p1, p2, p3, p4, ncol=2,
+	labels= c('Lineage4: Clade 1', 'Lineage4: Clade 2', 'Lineage4: Clade 3', 'Lineage4: Clade 4'))
+#dev.off()
+
+cruddat1 = cruddat[cruddat$clade==1,]
+cruddat2 = cruddat[cruddat$clade==2,]
+cruddat3 = cruddat[cruddat$clade==3,]
+cruddat4 = cruddat[cruddat$clade==4,]
+
+#pdf(file='lbi_cluster_figs/lbi_drug_clades.pdf',height=6,width=6)
+par(mfrow=c(2,2))
+boxplot(lbi~Drug.resistance.Tbprofiler,cruddat1,main='Lineage 4: Clade 1',
+	ylab='LBI',ylim=c(0,35))
+text(x=1,y=30,paste('p=',round(kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat1)$p.value,2)) )
+
+boxplot(lbi~Drug.resistance.Tbprofiler,cruddat2,main='Lineage 4: Clade 2',
+	ylab='LBI',ylim=c(0,35))
+text(x=1,y=30,paste('p=',round(kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat2)$p.value,2)) )
+
+boxplot(lbi~Drug.resistance.Tbprofiler,cruddat3,main='Lineage 4: Clade 3',
+	ylab='LBI',xlab='(All strains Sensitive)',ylim=c(0,35))
+boxplot(lbi~Drug.resistance.Tbprofiler,cruddat4,main='Lineage 4: Clade 4',
+	ylab='LBI',ylim=c(0,35))
+text(x=1,y=30,paste('p=',round(kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat4)$p.value,2)) )
+#dev.off()
 
