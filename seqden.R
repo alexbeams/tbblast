@@ -1537,57 +1537,100 @@ legend('topleft',
 tree = phi4_sample[[1]]
 tau = tau4
 
+sapply(tree$tip.label, function(x) grep(x,lin4nms)) -> y
+tree$tip.label <- lin4nms[y] 
+
 # just going to do this interactively. ggtree is pretty temperamental - using the base plot function
 
-plot(tree, type='fan',show.tip.label=F)
-clade1 <- extract.clade(tree, interactive=T)
+# these are saved in lineage_4_clades/ 
 
-plot(tree, type='fan',show.tip.label=F)
-clade2 <- extract.clade(tree, interactive=T)
+#plot(tree, type='fan',show.tip.label=F)
+#clade1 <- extract.clade(tree, interactive=T)
+#
+#plot(tree, type='fan',show.tip.label=F)
+#clade2 <- extract.clade(tree, interactive=T)
+#
+#plot(tree, type='fan',show.tip.label=F)
+#clade3 <- extract.clade(tree, interactive=T)
+#
+#plot(tree, type='fan',show.tip.label=F)
+#clade4 <- extract.clade(tree, interactive=T)
 
-plot(tree, type='fan',show.tip.label=F)
-clade3 <- extract.clade(tree, interactive=T)
 
-plot(tree, type='fan',show.tip.label=F)
-clade4 <- extract.clade(tree, interactive=T)
+# better way: coerce the tree to ultrametric and just cut the tree at a height far from the tips
+
+require(phytools)
+crud = as.hclust(force.ultrametric(tree))
+clades = cutree(crud,h=112)
+clades= data.frame(Sequence_name=names(clades),clade=clades)
 
 # load these into a dataframe:
-z = c(clade1$tip.label, clade2$tip.label, clade3$tip.label, clade4$tip.label)
+#z = c(clade1$tip.label, clade2$tip.label, clade3$tip.label, clade4$tip.label)
 
-clades = data.frame(Sequence_name = z, clade = rep(1:4, 
-	c(length(clade1$tip.label), length(clade2$tip.label), length(clade3$tip.label), length(clade4$tip.label) ))) 
-
+#clades = data.frame(Sequence_name = z, clade = rep(1:4, 
+#	c(length(clade1$tip.label), length(clade2$tip.label), length(clade3$tip.label), length(clade4$tip.label) ))) 
+#
 cruddat= merge(dat, clades)
 
 p <- ggtree(tree, layout='circular')
 p <- p %<+% cruddat
 
+# now, extract each clade and store it in a list
+cladetrees <- list()
+for(i in 1:max(cruddat$clade)){
+	cladetrees[[i]] = keep.tip(tree, cruddat[cruddat$clade==i,'Sequence_name'])
+}
+
+
+cladetreesplots <- lapply(cladetrees, function(x){
+		p <- ggtree(x) %<+% cruddat
+		p <- p + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi))
+		if(!'Drug-resistant' %in% subset(cruddat, Sequence_name %in% x$tip.label)[,'Drug.resistance.Tbprofiler']){p <- p + scale_color_manual(values='#619CFF')}	
+		return(p)
+	}
+)
+
+
 #pdf(file='lbi_cluster_figs/lineage4_clade_circle.pdf',height=6,width=6)
 p + geom_tippoint(aes(col=factor(clade) ))
 #dev.off()
 
-# make a plot just of clade 1
-p1 <- ggtree(clade1) %<+% cruddat
-p1 <- p1 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi))
 
-# make a plot just of clade 2
-p2 <- ggtree(clade2) %<+% cruddat
-p2 <- p2 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi))
-
-# make a plot just of clade 3
-p3 <- ggtree(clade3) %<+% cruddat
-p3 <- p3 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi)) + scale_color_manual(values='#619CFF')
-
-# make a plot just of clade 4
-p4 <- ggtree(clade4) %<+% cruddat
-p4 <- p4 + geom_tippoint(aes(col=Drug.resistance.Tbprofiler,alpha=lbi))
-
-
+#now, make some figures showing the different clades
 require(cowplot)
 
+#pdf(file='lbi_cluster_figs/lineage4_clade1.pdf',height=6,width=6)
+plot_grid(cladetreesplots[[1]], ggplot(cruddat[cruddat$clade==1,],aes(x=Drug.resistance.Tbprofiler,y=lbi)) + geom_boxplot() )
+#dev.off()
+
+#pdf(file='lbi_cluster_figs/lineage4_clade5.pdf',height=6,width=6)
+cladetreesplots[[5]]
+#dev.off()
+
+pdf(file='lbi_cluster_figs/lineage4_clades_2481011.pdf',height=25,width=18)
+plot_grid(
+	cladetreesplots[[2]],
+	ggplot(cruddat[cruddat$clade==2,],aes(x=Drug.resistance.Tbprofiler,y=lbi)) + geom_boxplot(),
+	cladetreesplots[[4]],
+	ggplot(cruddat[cruddat$clade==4,],aes(x=Drug.resistance.Tbprofiler,y=lbi)) + geom_boxplot(),
+	cladetreesplots[[8]],
+	ggplot(cruddat[cruddat$clade==8,],aes(x=Drug.resistance.Tbprofiler,y=lbi)) + geom_boxplot(),
+	cladetreesplots[[10]],
+	ggplot(cruddat[cruddat$clade==10,],aes(x=Drug.resistance.Tbprofiler,y=lbi)) + geom_boxplot(),
+	cladetreesplots[[11]],
+	ggplot(cruddat[cruddat$clade==11,],aes(x=Drug.resistance.Tbprofiler,y=lbi)) + geom_boxplot(),
+	nrow=5)
+dev.off()
+
+#pdf(file='lbi_cluster_figs/lineage4_clades_36791213.pdf',height=9,width=9)
+plot_grid(cladetreesplots[[3]],cladetreesplots[[6]],cladetreesplots[[7]],
+	cladetreesplots[[9]],cladetreesplots[[12]],cladetreesplots[[13]],nrow=3)
+#dev.off()
+
+
 #pdf(file='lbi_cluster_figs/lineage4clades.pdf',height=12,width=12)
-plot_grid(p1, p2, p3, p4, ncol=2,
-	labels= c('Lineage4: Clade 1', 'Lineage4: Clade 2', 'Lineage4: Clade 3', 'Lineage4: Clade 4'))
+#plot_grid(p1, p2, p3, p4, ncol=2,
+#	labels= c('Lineage4: Clade 1', 'Lineage4: Clade 2', 'Lineage4: Clade 3', 'Lineage4: Clade 4'))
 #dev.off()
 
 cruddat1 = cruddat[cruddat$clade==1,]
@@ -1603,10 +1646,11 @@ text(x=1,y=30,paste('p=',round(kruskal.test(lbi~Drug.resistance.Tbprofiler,crudd
 
 boxplot(lbi~Drug.resistance.Tbprofiler,cruddat2,main='Lineage 4: Clade 2',
 	ylab='LBI',ylim=c(0,35))
-text(x=1,y=30,paste('p=',round(kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat2)$p.value,2)) )
 
 boxplot(lbi~Drug.resistance.Tbprofiler,cruddat3,main='Lineage 4: Clade 3',
 	ylab='LBI',xlab='(All strains Sensitive)',ylim=c(0,35))
+text(x=1,y=30,paste('p=',round(kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat3)$p.value,2)) )
+
 boxplot(lbi~Drug.resistance.Tbprofiler,cruddat4,main='Lineage 4: Clade 4',
 	ylab='LBI',ylim=c(0,35))
 text(x=1,y=30,paste('p=',round(kruskal.test(lbi~Drug.resistance.Tbprofiler,cruddat4)$p.value,2)) )
